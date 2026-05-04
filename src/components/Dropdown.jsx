@@ -1,37 +1,34 @@
 import usePopover from "../hooks/usePopover";
 
 export default function Dropdown({
-  className,
-  as = "div",
+  children: renderMenu = (c) => c,
   defaultClassName = "dropdown",
-  children,
-  items,
-  variant,
+  renderButton = (c) => c,
+  as = "div",
+  className,
   ...rest
 }) {
   const As = as;
 
-  const { popover, isOpen, open } = usePopover();
+  const { ref, active, onClick } = usePopover();
 
   return (
-    <As className={joinClassNames(defaultClassName, className)}>
-      <DropdownButton active={isOpen} variant={variant} onClick={open}>
-        {children}
-      </DropdownButton>
-      {isOpen && <DropdownMenu ref={popover}>{items}</DropdownMenu>}
+    <As className={joinClassNames(defaultClassName, className)} {...rest}>
+      {renderButton({ active, onClick })}
+      {active && renderMenu({ ref })}
     </As>
   );
 }
 
 function DropdownButton({
-  active,
-  className,
-  toggle = true,
-  as = "button",
-  type = "button",
+  defaultClassName = "btn",
   children = "Dropdown",
   variant = "secondary",
-  defaultClassName = "btn",
+  type = "button",
+  as = "button",
+  toggle = true,
+  className,
+  active,
   ...rest
 }) {
   const As = as;
@@ -54,50 +51,74 @@ function DropdownButton({
 }
 
 function DropdownMenu({
+  defaultClassName = "dropdown-menu d-block overflow-y-scroll",
+  renderItem = (child, i) => <li key={i}>{child}</li>,
+  height = 210,
   as = "ul",
   className,
-  defaultClassName = "dropdown-menu d-block",
-  render = (child, i) => <li key={i}>{child}</li>,
+  style,
   ...rest
 }) {
   const As = as;
 
+  const normalProps = {
+    className: joinClassNames(defaultClassName, className),
+    style: { height, ...style },
+  };
+
   if ("children" in rest) {
+    const { children, ...withoutChildren } = rest;
+
     return (
-      <As className={joinClassNames(defaultClassName, className)} {...rest}>
-        {(Array.isArray(rest.children) ? rest.children : [rest.children]).map(
-          render,
-        )}
+      <As {...normalProps} {...withoutChildren}>
+        {(Array.isArray(children) ? children : [children]).map(renderItem)}
       </As>
     );
   }
 
-  return (
-    <As className={joinClassNames(defaultClassName, className)} {...rest}></As>
-  );
+  return <As {...normalProps} {...rest}></As>;
 }
 
 function DropdownItem({
-  active,
-  className,
-  as = "button",
-  type = "button",
+  defaultClassName = "dropdown-item d-flex align-items-center gap-2",
   children = "Action",
-  defaultClassName = "dropdown-item",
+  type = "button",
+  as = "button",
+  className,
+  active,
   ...rest
 }) {
   const As = as;
 
   return (
     <As
-      className={joinClassNames(
-        defaultClassName,
-        active && "active",
-        className,
-      )}
+      className={joinClassNames(defaultClassName, className)}
       type={type}
       {...rest}
     >
+      {active ? (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width={16}
+          height={16}
+          fill="currentColor"
+          className="bi bi-check-square-fill"
+          viewBox="0 0 16 16"
+        >
+          <path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2zm10.03 4.97a.75.75 0 0 1 .011 1.05l-3.992 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.75.75 0 0 1 1.08-.022z" />
+        </svg>
+      ) : (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width={16}
+          height={16}
+          fill="currentColor"
+          className="bi bi-square"
+          viewBox="0 0 16 16"
+        >
+          <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z" />
+        </svg>
+      )}
       {children}
     </As>
   );

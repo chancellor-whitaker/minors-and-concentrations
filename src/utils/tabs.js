@@ -1,7 +1,10 @@
 // if data comes in with columns of conc_x & minor_x, then count how many conc cols and count how many minor cols
-
 export default [
   {
+    formatters: {
+      dataKey: (k) => k,
+      dataValue: ([k, v]) => v,
+    },
     id: "minors",
     label: "Minors",
     initialStates: { pivotRow: ["minor"], pivotColumn: "term" },
@@ -25,9 +28,14 @@ export default [
       pivotRow: (arr) => ["minor", ...arr.filter((s) => s !== "minor")],
       pivotRowOptions: (arr) => arr.filter((s) => s !== "minor"),
       pivotColumnOptions: (arr) => arr.filter((s) => s !== "minor"),
+      filterLists: (obj) => obj,
     },
   },
   {
+    formatters: {
+      dataKey: (k) => k,
+      dataValue: ([k, v]) => v,
+    },
     id: "concentrations",
     label: "Concentrations",
     initialStates: {
@@ -77,6 +85,7 @@ export default [
         arr.filter((s) => s !== "program" && s !== "concentration"),
       pivotColumnOptions: (arr) =>
         arr.filter((s) => s !== "program" && s !== "concentration"),
+      filterLists: (obj) => obj,
     },
   },
 ];

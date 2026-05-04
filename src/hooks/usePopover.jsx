@@ -43,7 +43,7 @@ const usePopover = () => {
 
   useClickOutside(popover, close);
 
-  return { popover, open, isOpen };
+  return { ref: popover, onClick: open, active: isOpen };
 };
 
 export default usePopover;
