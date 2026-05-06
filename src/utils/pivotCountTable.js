@@ -1,4 +1,4 @@
-export default function pivotCountTable(data, { rows, column }) {
+export default function pivotCountTable(data, { column, rows }) {
   const pivot = {};
   const columnsSet = new Set();
 

@@ -1,13 +1,12 @@
-import { useDeferredValue, useMemo, useState } from "react";
-import MainContainer from "./components/MainContainer";
-import usePromise from "./hooks/usePromise";
 import { AgGridReact } from "ag-grid-react";
-import useData from "./hooks/useData";
-import pivotCountTable from "./utils/pivotCountTable";
-import tabs from "./utils/tabs";
-import dataUrl from "./utils/dataUrl";
+import { useState, useMemo } from "react";
+
+import MainContainer from "./components/MainContainer";
+import tabs, { dataPromise } from "./utils/tabs";
 import usePrevious from "./hooks/usePrevious";
 import Dropdown from "./components/Dropdown";
+import pivotTable from "./utils/pivotTable";
+import usePromise from "./hooks/usePromise";
 
 const { SubContainer } = MainContainer;
 
@@ -28,42 +27,51 @@ const getEveryValue = (data) => {
       }),
     );
 
-  return store;
+  return Object.fromEntries(
+    Object.entries(store).map(([k, set]) => [k, new Set([...set].sort())]),
+  );
 };
+
+// !total row
+// !formatting numbers/formatting header names
+// !add column measuring logic
+// !filter state should be like faculty workload filter state
+// !should be able to set initial filters
+// ?should be able to control resetting behavior (how state resets between tabs)
+// ?grid props accessor?
+// ?performance issues
+// ?if length of list is 0, don't show component/ui
 
 export default function App() {
   const [filters, setFilters] = useState();
 
   const [tabId, setTabId] = useState(tabs[0].id);
 
-  const tab = tabs.find((obj) => obj.id === tabId);
-
-  const { accessorFns, initialStates, formatters } = tab;
-
-  const [pivotRowState, setPivotRow] = useState(initialStates.pivotRow);
-
-  const [pivotColumnState, setPivotColumn] = useState(
-    initialStates.pivotColumn,
+  const { initialStates, accessorFns, formatters } = useMemo(
+    () => tabs.find((obj) => obj.id === tabId),
+    [tabId],
   );
 
-  const initPivotState = () => {
-    setPivotRow(initialStates.pivotRow);
+  const [pivotConfigState, setPivotConfig] = useState(
+    initialStates.pivotConfig,
+  );
 
-    setPivotColumn(initialStates.pivotColumn);
-  };
+  const pivotConfig = accessorFns.pivotConfig(pivotConfigState);
+
+  const initPivotState = () => setPivotConfig(initialStates.pivotConfig);
 
   usePrevious(initialStates, initPivotState);
 
-  const pivotRow = accessorFns.pivotRow(pivotRowState);
+  const { column: pivotColumn, rows: pivotRows, agg: aggType } = pivotConfig;
 
-  const pivotColumn = accessorFns.pivotColumn(pivotColumnState);
-
-  const originalData = useData(dataUrl);
+  const originalData = usePromise(dataPromise);
 
   const data = useMemo(
     () => accessorFns.data(originalData),
     [accessorFns, originalData],
   );
+
+  console.log(data);
 
   const initialFilters = useMemo(
     () => accessorFns.filterLists(getEveryValue(data)),
@@ -114,12 +122,7 @@ export default function App() {
       ? areAllValuesActive(a[0])
       : filters && a[0] in filters && filters[a[0]].has(a[1]);
 
-  console.log(filters);
-
-  const rowData = pivotCountTable(filteredData, {
-    rows: pivotRow,
-    column: pivotColumn,
-  });
+  const rowData = pivotTable(filteredData, pivotConfig);
 
   const originalColumnDefs = [...new Set(rowData.flatMap(Object.keys))].map(
     (field) => ({ field }),
@@ -127,31 +130,54 @@ export default function App() {
 
   const columnDefs = accessorFns.columnDefs(originalColumnDefs);
 
-  const updatePivotRow = (key) =>
-    setPivotRow((arr) =>
-      arr.includes(key) ? arr.filter((s) => s !== key) : [...arr, key],
-    );
+  const updatePivotRows = (key) =>
+    setPivotConfig((obj) => ({
+      ...obj,
+      rows: obj.rows.includes(key)
+        ? obj.rows.filter((s) => s !== key)
+        : [...obj.rows, key],
+    }));
+
+  const updatePivotColumn = (key) =>
+    setPivotConfig((obj) => ({
+      ...obj,
+      column: obj.column === key ? null : key,
+    }));
+
+  const updateAggType = (key) =>
+    setPivotConfig((obj) => ({
+      ...obj,
+      agg: obj.agg === key ? null : key,
+    }));
 
   const keys = [...new Set(data.flatMap(Object.keys))];
 
-  const pivotRowOptions = accessorFns.pivotRowOptions(keys);
+  const pivotRowsList = accessorFns.lists.pivotRows(keys);
 
-  const pivotColumnOptions = accessorFns.pivotColumnOptions(keys);
+  const pivotColumnList = accessorFns.lists.pivotColumn(keys);
 
-  const pivotRowDropdown = (
+  const aggTypeList = accessorFns.lists.aggType([
+    "sum",
+    "avg",
+    "min",
+    "max",
+    "count",
+  ]);
+
+  const pivotRowsDropdown = (
     <Dropdown
       renderButton={(api) => (
         <Dropdown.Button {...api}>
-          Pivot rows: {pivotRow.map(formatters.dataKey).join(", ")}
+          Pivot rows: {pivotRows.map(formatters.dataKey).join(", ")}
         </Dropdown.Button>
       )}
     >
       {(api) => (
         <Dropdown.Menu {...api}>
-          {pivotRowOptions.map((key) => (
+          {pivotRowsList.map((key) => (
             <Dropdown.Item
-              onClick={() => updatePivotRow(key)}
-              active={pivotRow.includes(key)}
+              onClick={() => updatePivotRows(key)}
+              active={pivotRows.includes(key)}
             >
               {formatters.dataKey(key)}
             </Dropdown.Item>
@@ -171,12 +197,35 @@ export default function App() {
     >
       {(api) => (
         <Dropdown.Menu {...api}>
-          {pivotColumnOptions.map((key) => (
+          {pivotColumnList.map((key) => (
             <Dropdown.Item
-              onClick={() => setPivotColumn((s) => (s === key ? null : key))}
+              onClick={() => updatePivotColumn(key)}
               active={pivotColumn === key}
+              key={key}
             >
               {formatters.dataKey(key)}
+            </Dropdown.Item>
+          ))}
+        </Dropdown.Menu>
+      )}
+    </Dropdown>
+  );
+
+  const aggTypeDropdown = (
+    <Dropdown
+      renderButton={(api) => (
+        <Dropdown.Button {...api}>Agg type: {aggType}</Dropdown.Button>
+      )}
+    >
+      {(api) => (
+        <Dropdown.Menu {...api}>
+          {aggTypeList.map((key) => (
+            <Dropdown.Item
+              onClick={() => updateAggType(key)}
+              active={aggType === key}
+              key={key}
+            >
+              {key}
             </Dropdown.Item>
           ))}
         </Dropdown.Menu>
@@ -207,7 +256,6 @@ export default function App() {
 
   const renderDropdownFilter = (k) => (
     <Dropdown
-      className="flex-fill"
       renderButton={(api) => (
         <Dropdown.Button
           variant={areAllValuesActive(k) ? "secondary" : "warning"}
@@ -217,6 +265,8 @@ export default function App() {
           {formatters.dataKey(k)}
         </Dropdown.Button>
       )}
+      className="flex-fill"
+      key={k}
     >
       {(api) => (
         <Dropdown.Menu {...api}>
@@ -233,6 +283,7 @@ export default function App() {
             <Dropdown.Item
               onClick={() => updateFilters([k, v])}
               active={isValueActive([k, v])}
+              key={v}
             >
               {formatters.dataValue([k, v])}
             </Dropdown.Item>
@@ -246,15 +297,16 @@ export default function App() {
     <MainContainer>
       <SubContainer>{tabSwitcher}</SubContainer>
       <SubContainer className="d-flex flex-wrap gap-2">
-        {pivotRowDropdown}
+        {pivotRowsDropdown}
         {pivotColumnDropdown}
+        {aggTypeDropdown}
       </SubContainer>
       <SubContainer className="d-flex flex-wrap gap-2">
         {filterableFields.map(renderDropdownFilter)}
       </SubContainer>
       <SubContainer>
         <div style={{ height: 500 }}>
-          <AgGridReact rowData={rowData} columnDefs={columnDefs}></AgGridReact>
+          <AgGridReact columnDefs={columnDefs} rowData={rowData}></AgGridReact>
         </div>
       </SubContainer>
     </MainContainer>

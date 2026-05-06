@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 // Improved version of https://usehooks.com/useOnClickOutside/
 const useClickOutside = (ref, handler) => {
@@ -43,7 +43,7 @@ const usePopover = () => {
 
   useClickOutside(popover, close);
 
-  return { ref: popover, onClick: open, active: isOpen };
+  return { active: isOpen, onClick: open, ref: popover };
 };
 
 export default usePopover;

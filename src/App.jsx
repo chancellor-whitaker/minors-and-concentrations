@@ -1,8 +1,9 @@
-import { csv } from "d3-fetch";
-import MainContainer from "./components/MainContainer";
-import usePromise from "./hooks/usePromise";
 import { AgGridReact } from "ag-grid-react";
 import { useMemo } from "react";
+import { csv } from "d3-fetch";
+
+import MainContainer from "./components/MainContainer";
+import usePromise from "./hooks/usePromise";
 
 const { SubContainer } = MainContainer;
 
@@ -92,5 +93,5 @@ const makeDatasetsTabular = (datasets) =>
         return { ...row, notRetained, retained, total };
       });
 
-      return { rowData, columnDefs: getColumnDefs(rowData) };
+      return { columnDefs: getColumnDefs(rowData), rowData };
     });

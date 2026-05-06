@@ -1,91 +1,124 @@
-// if data comes in with columns of conc_x & minor_x, then count how many conc cols and count how many minor cols
+const fetchJson = (url) => fetch(url).then((res) => res.json());
+
+const dataOrder = ["base", "concentrations", "descriptions", "minors"];
+
+const promises = dataOrder.map((name) => fetchJson(`data/${name}.json`));
+
+export const dataPromise = Promise.all(promises);
+
+const concDataAccessor = (result) => {
+  if (!result) return [];
+
+  const data = Object.fromEntries(
+    dataOrder.map((name, i) => [name, result[i]]),
+  );
+
+  return data.concentrations.map(({ base_id: bId, conc_id: cId, ...rest }) => ({
+    ...data.base[bId],
+    ...rest,
+    concentration: data.descriptions[cId],
+  }));
+};
+
+const minorDataAccessor = (result) => {
+  if (!result) return [];
+
+  const data = Object.fromEntries(
+    dataOrder.map((name, i) => [name, result[i]]),
+  );
+
+  return data.minors.map(({ minor_id: mId, base_id: bId, ...rest }) => ({
+    ...data.base[bId],
+    ...rest,
+    minor: data.descriptions[mId],
+  }));
+};
+
+const headerRules = {};
+
+const valueRules = {};
+
+const allButMinor = (arr) => arr.filter((s) => s !== "minor");
+
+const allButConc = (arr) =>
+  arr.filter((s) => s !== "program" && s !== "concentration");
+
 export default [
   {
-    formatters: {
-      dataKey: (k) => k,
-      dataValue: ([k, v]) => v,
-    },
-    id: "minors",
-    label: "Minors",
-    initialStates: { pivotRow: ["minor"], pivotColumn: "term" },
     accessorFns: {
-      data: (arr) =>
-        [arr]
-          .filter(Boolean)
-          .flat()
-          .flatMap(({ concentration, ...row }) =>
-            (row["minor"].length === 0 ? [""] : row["minor"]).map((str) => ({
-              ...row,
-              minor: str,
-            })),
-          ),
       columnDefs: (arr) => {
         const fieldDefs = { minor: { sort: "asc" } };
 
         return arr.map((def) => ({ ...def, ...fieldDefs[def.field] }));
       },
-      pivotColumn: (str) => str,
-      pivotRow: (arr) => ["minor", ...arr.filter((s) => s !== "minor")],
-      pivotRowOptions: (arr) => arr.filter((s) => s !== "minor"),
-      pivotColumnOptions: (arr) => arr.filter((s) => s !== "minor"),
-      filterLists: (obj) => obj,
+      lists: {
+        pivotColumn: allButMinor,
+        pivotRows: allButMinor,
+        aggType: (arr) => arr,
+      },
+      pivotConfig: (obj) => ({
+        ...obj,
+        rows: ["minor", ...allButMinor(obj.rows)],
+      }),
+      data: minorDataAccessor,
+      filterLists: (x) => x,
     },
+    formatters: {
+      dataValue: ([k, v]) =>
+        k in valueRules && v in valueRules[k] ? valueRules[k][v] : v,
+      dataKey: (k) => (k in headerRules ? headerRules[k] : k),
+    },
+    initialStates: {
+      pivotConfig: {
+        rows: ["minor"],
+        column: "term",
+        value: "total",
+        agg: "sum",
+      },
+    },
+    label: "Minors",
+    id: "minors",
   },
   {
-    formatters: {
-      dataKey: (k) => k,
-      dataValue: ([k, v]) => v,
-    },
-    id: "concentrations",
-    label: "Concentrations",
-    initialStates: {
-      pivotRow: ["program", "concentration"],
-      pivotColumn: "term",
-    },
     accessorFns: {
-      data: (arr) =>
-        [arr]
-          .filter(Boolean)
-          .flat()
-          .flatMap(({ minor, ...row }) =>
-            (row["concentration"].length === 0
-              ? [""]
-              : row["concentration"]
-            ).map((str) => ({
-              ...row,
-              concentration: str,
-            })),
-          ),
       columnDefs: (arr) => {
         const fieldDefs = {
-          program: { sort: "asc", sortIndex: 0 },
-          concentration: { sort: "asc", sortIndex: 1 },
+          concentration: { sortIndex: 1, sort: "asc" },
+          program: { sortIndex: 0, sort: "asc" },
         };
-
-        const isTerm = (s) =>
-          typeof s === "string" &&
-          s.split(" ").length === 2 &&
-          ["spring", "summer", "fall", "winter"].includes(
-            s.toLowerCase().split(" ")[0],
-          );
-
-        const terms = arr.map(({ field }) => field).filter(isTerm);
-
-        console.log(terms);
 
         return arr.map((def) => ({ ...def, ...fieldDefs[def.field] }));
       },
-      pivotColumn: (str) => str,
-      pivotRow: (arr) => [
-        "program",
-        "concentration",
-        ...arr.filter((s) => s !== "program" && s !== "concentration"),
-      ],
-      pivotRowOptions: (arr) =>
-        arr.filter((s) => s !== "program" && s !== "concentration"),
-      pivotColumnOptions: (arr) =>
-        arr.filter((s) => s !== "program" && s !== "concentration"),
+      pivotConfig: (obj) => ({
+        ...obj,
+        rows: ["program", "concentration", ...allButConc(obj.rows)],
+      }),
+      lists: {
+        pivotColumn: allButConc,
+        aggType: (arr) => arr,
+        pivotRows: allButConc,
+      },
       filterLists: (obj) => obj,
+      data: concDataAccessor,
     },
+    initialStates: {
+      pivotConfig: {
+        rows: ["program", "concentration"],
+        column: "term",
+        value: "total",
+        agg: "sum",
+      },
+    },
+    formatters: {
+      dataValue: ([, v]) => v,
+      dataKey: (k) => k,
+    },
+    label: "Concentrations",
+    id: "concentrations",
   },
 ];
+
+// props api
+// - formatters
+// - accessor fns
+// - initial states
