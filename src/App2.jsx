@@ -32,15 +32,17 @@ const getEveryValue = (data) => {
   );
 };
 
-// !total row
-// !formatting numbers/formatting header names
-// !add column measuring logic
+// *total row
+// *formatting numbers
+// *right align numbers
+// *formatting header names
+// *grid props accessor?
+// !if length of list is 0, don't show component/ui
 // !filter state should be like faculty workload filter state
 // !should be able to set initial filters
 // ?should be able to control resetting behavior (how state resets between tabs)
-// ?grid props accessor?
+// ?add column measuring logic
 // ?performance issues
-// ?if length of list is 0, don't show component/ui
 
 export default function App() {
   const [filters, setFilters] = useState();
@@ -84,7 +86,7 @@ export default function App() {
     () =>
       data.filter((row) => {
         for (const [k, v] of Object.entries(row)) {
-          if (!(filters && k in filters && filters[k].has(v))) {
+          if (filters && k in filters && !filters[k].has(v)) {
             return false;
           }
         }
@@ -124,11 +126,21 @@ export default function App() {
 
   const rowData = pivotTable(filteredData, pivotConfig);
 
-  const originalColumnDefs = [...new Set(rowData.flatMap(Object.keys))].map(
+  const pinnedTopRowData = pivotTable(filteredData, {
+    ...pivotConfig,
+    rows: [],
+  });
+
+  const columnDefs = [...new Set(rowData.flatMap(Object.keys))].map(
     (field) => ({ field }),
   );
 
-  const columnDefs = accessorFns.columnDefs(originalColumnDefs);
+  const originalGridProps = { pinnedTopRowData, columnDefs, rowData };
+
+  const gridProps = accessorFns.gridProps(originalGridProps, {
+    filteredData,
+    pivotConfig,
+  });
 
   const updatePivotRows = (key) =>
     setPivotConfig((obj) => ({
@@ -306,7 +318,7 @@ export default function App() {
       </SubContainer>
       <SubContainer>
         <div style={{ height: 500 }}>
-          <AgGridReact columnDefs={columnDefs} rowData={rowData}></AgGridReact>
+          <AgGridReact {...gridProps}></AgGridReact>
         </div>
       </SubContainer>
     </MainContainer>

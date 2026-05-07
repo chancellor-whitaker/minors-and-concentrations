@@ -34,22 +34,73 @@ const minorDataAccessor = (result) => {
   }));
 };
 
-const headerRules = {};
+const globalHeaderRules = { priority_no: "Program No.", ft_pt: "FT / PT" };
 
-const valueRules = {};
+const minorHeaderRules = { ...globalHeaderRules, priority: "Min. Priority" };
+
+const concHeaderRules = {
+  ...globalHeaderRules,
+  priority: "Conc. Priority",
+};
+
+const globalValueRules = {};
 
 const allButMinor = (arr) => arr.filter((s) => s !== "minor");
 
 const allButConc = (arr) =>
   arr.filter((s) => s !== "program" && s !== "concentration");
 
+const defaultValueFormatter = ({ value }) => value?.toLocaleString();
+
+const getMinorColDefs = (arr) => {
+  const fieldDefs = { minor: { sort: "asc" } };
+
+  return arr.map((def) => ({
+    ...def,
+    valueFormatter: defaultValueFormatter,
+    ...fieldDefs[def.field],
+  }));
+};
+
+const snakeToTitle = (str) => {
+  return str
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
+const minorDKeyFormatter = (k) =>
+  k in minorHeaderRules ? minorHeaderRules[k] : snakeToTitle(k);
+
+const concDKeyFormatter = (k) =>
+  k in concHeaderRules ? concHeaderRules[k] : snakeToTitle(k);
+
+const getConcColDefs = (arr) => {
+  const fieldDefs = {
+    concentration: { sortIndex: 1, sort: "asc" },
+    program: { sortIndex: 0, sort: "asc" },
+  };
+
+  return arr.map((def) => ({
+    ...def,
+    valueFormatter: defaultValueFormatter,
+    ...fieldDefs[def.field],
+  }));
+};
+
 export default [
   {
     accessorFns: {
-      columnDefs: (arr) => {
-        const fieldDefs = { minor: { sort: "asc" } };
+      gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
+        const pivotRows = pivotConfig.rows;
 
-        return arr.map((def) => ({ ...def, ...fieldDefs[def.field] }));
+        return {
+          ...params,
+          columnDefs: getMinorColDefs(columnDefs).map((o) => ({
+            ...o,
+            type: pivotRows.includes(o.field) ? null : "numericColumn",
+          })),
+        };
       },
       lists: {
         pivotColumn: allButMinor,
@@ -60,13 +111,16 @@ export default [
         ...obj,
         rows: ["minor", ...allButMinor(obj.rows)],
       }),
+      filterLists: (obj) =>
+        Object.fromEntries(Object.entries(obj).filter(([k]) => k !== "total")),
       data: minorDataAccessor,
-      filterLists: (x) => x,
     },
     formatters: {
       dataValue: ([k, v]) =>
-        k in valueRules && v in valueRules[k] ? valueRules[k][v] : v,
-      dataKey: (k) => (k in headerRules ? headerRules[k] : k),
+        k in globalValueRules && v in globalValueRules[k]
+          ? globalValueRules[k][v]
+          : v,
+      dataKey: minorDKeyFormatter,
     },
     initialStates: {
       pivotConfig: {
@@ -81,13 +135,16 @@ export default [
   },
   {
     accessorFns: {
-      columnDefs: (arr) => {
-        const fieldDefs = {
-          concentration: { sortIndex: 1, sort: "asc" },
-          program: { sortIndex: 0, sort: "asc" },
-        };
+      gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
+        const pivotRows = pivotConfig.rows;
 
-        return arr.map((def) => ({ ...def, ...fieldDefs[def.field] }));
+        return {
+          ...params,
+          columnDefs: getConcColDefs(columnDefs).map((o) => ({
+            ...o,
+            type: pivotRows.includes(o.field) ? null : "numericColumn",
+          })),
+        };
       },
       pivotConfig: (obj) => ({
         ...obj,
@@ -98,8 +155,16 @@ export default [
         aggType: (arr) => arr,
         pivotRows: allButConc,
       },
-      filterLists: (obj) => obj,
+      filterLists: (obj) =>
+        Object.fromEntries(Object.entries(obj).filter(([k]) => k !== "total")),
       data: concDataAccessor,
+    },
+    formatters: {
+      dataValue: ([k, v]) =>
+        k in globalValueRules && v in globalValueRules[k]
+          ? globalValueRules[k][v]
+          : v,
+      dataKey: concDKeyFormatter,
     },
     initialStates: {
       pivotConfig: {
@@ -108,10 +173,6 @@ export default [
         value: "total",
         agg: "sum",
       },
-    },
-    formatters: {
-      dataValue: ([, v]) => v,
-      dataKey: (k) => k,
     },
     label: "Concentrations",
     id: "concentrations",
