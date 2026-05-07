@@ -1,3 +1,4 @@
+import { themeBalham } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { useState, useMemo } from "react";
 
@@ -38,6 +39,9 @@ const getEveryValue = (data) => {
 // *formatting header names
 // *grid props accessor?
 // *if length of list is 0, don't show component/ui
+// *download button
+// ?size columns to fit without truncating certain columns/responsive auto-sizing (based on dynamic width)
+// !remove menu bar if lists are empty
 // !filter state should be like faculty workload filter state
 // !should be able to set initial filters
 // ?should be able to control resetting behavior (how state resets between tabs)
@@ -336,7 +340,7 @@ export default function App() {
       </SubContainer>
       <SubContainer>
         <div style={{ height: 500 }}>
-          <AgGridReact {...gridProps}></AgGridReact>
+          <AgGridReact theme={themeBalham} {...gridProps}></AgGridReact>
         </div>
       </SubContainer>
     </MainContainer>

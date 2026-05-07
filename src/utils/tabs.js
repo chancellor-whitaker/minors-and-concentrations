@@ -72,7 +72,7 @@ const getMinorColDefs = (arr) => {
 };
 
 const snakeToTitle = (str) => {
-  return str
+  return (typeof str === "string" ? str : "")
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
