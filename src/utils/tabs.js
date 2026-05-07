@@ -1,5 +1,14 @@
 const fetchJson = (url) => fetch(url).then((res) => res.json());
 
+const autoSizeGrid = ({ api }) => api.autoSizeAllColumns();
+
+const autoSizeProps = {
+  // autoSizeStrategy: { type: "fitCellContents" },
+  onGridSizeChanged: autoSizeGrid,
+  onRowDataUpdated: autoSizeGrid,
+  onBodyScrollEnd: autoSizeGrid,
+};
+
 const dataOrder = ["base", "concentrations", "descriptions", "minors"];
 
 const promises = dataOrder.map((name) => fetchJson(`data/${name}.json`));
@@ -96,6 +105,7 @@ export default [
 
         return {
           ...params,
+          ...autoSizeProps,
           columnDefs: getMinorColDefs(columnDefs).map((o) => ({
             ...o,
             type: pivotRows.includes(o.field) ? null : "numericColumn",
@@ -103,9 +113,9 @@ export default [
         };
       },
       lists: {
-        pivotColumn: allButMinor,
-        pivotRows: allButMinor,
-        aggType: (arr) => arr,
+        pivotColumn: () => [],
+        pivotRows: () => [],
+        aggType: () => [],
       },
       pivotConfig: (obj) => ({
         ...obj,
@@ -140,6 +150,7 @@ export default [
 
         return {
           ...params,
+          ...autoSizeProps,
           columnDefs: getConcColDefs(columnDefs).map((o) => ({
             ...o,
             type: pivotRows.includes(o.field) ? null : "numericColumn",

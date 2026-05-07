@@ -68,7 +68,7 @@ function DropdownItem({
 function DropdownMenu({
   defaultClassName = "dropdown-menu d-block overflow-y-scroll",
   renderItem = (child, i) => <li key={i}>{child}</li>,
-  maxHeight = 210,
+  maxHeight = 209,
   as = "ul",
   className,
   style,

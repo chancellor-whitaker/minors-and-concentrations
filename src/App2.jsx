@@ -37,7 +37,7 @@ const getEveryValue = (data) => {
 // *right align numbers
 // *formatting header names
 // *grid props accessor?
-// !if length of list is 0, don't show component/ui
+// *if length of list is 0, don't show component/ui
 // !filter state should be like faculty workload filter state
 // !should be able to set initial filters
 // ?should be able to control resetting behavior (how state resets between tabs)
@@ -72,8 +72,6 @@ export default function App() {
     () => accessorFns.data(originalData),
     [accessorFns, originalData],
   );
-
-  console.log(data);
 
   const initialFilters = useMemo(
     () => accessorFns.filterLists(getEveryValue(data)),
@@ -179,69 +177,89 @@ export default function App() {
   const pivotRowsDropdown = (
     <Dropdown
       renderButton={(api) => (
-        <Dropdown.Button {...api}>
+        <Dropdown.Button
+          disabled={!pivotRowsList.length > 0}
+          toggle={pivotRowsList.length > 0}
+          {...api}
+        >
           Pivot rows: {pivotRows.map(formatters.dataKey).join(", ")}
         </Dropdown.Button>
       )}
     >
-      {(api) => (
-        <Dropdown.Menu {...api}>
-          {pivotRowsList.map((key) => (
-            <Dropdown.Item
-              onClick={() => updatePivotRows(key)}
-              active={pivotRows.includes(key)}
-            >
-              {formatters.dataKey(key)}
-            </Dropdown.Item>
-          ))}
-        </Dropdown.Menu>
-      )}
+      {(api) =>
+        pivotRowsList.length > 0 && (
+          <Dropdown.Menu {...api}>
+            {pivotRowsList.map((key) => (
+              <Dropdown.Item
+                onClick={() => updatePivotRows(key)}
+                active={pivotRows.includes(key)}
+              >
+                {formatters.dataKey(key)}
+              </Dropdown.Item>
+            ))}
+          </Dropdown.Menu>
+        )
+      }
     </Dropdown>
   );
 
   const pivotColumnDropdown = (
     <Dropdown
       renderButton={(api) => (
-        <Dropdown.Button {...api}>
+        <Dropdown.Button
+          disabled={!pivotColumnList.length > 0}
+          toggle={pivotColumnList.length > 0}
+          {...api}
+        >
           Pivot column: {formatters.dataKey(pivotColumn)}
         </Dropdown.Button>
       )}
     >
-      {(api) => (
-        <Dropdown.Menu {...api}>
-          {pivotColumnList.map((key) => (
-            <Dropdown.Item
-              onClick={() => updatePivotColumn(key)}
-              active={pivotColumn === key}
-              key={key}
-            >
-              {formatters.dataKey(key)}
-            </Dropdown.Item>
-          ))}
-        </Dropdown.Menu>
-      )}
+      {(api) =>
+        pivotColumnList.length > 0 && (
+          <Dropdown.Menu {...api}>
+            {pivotColumnList.map((key) => (
+              <Dropdown.Item
+                onClick={() => updatePivotColumn(key)}
+                active={pivotColumn === key}
+                key={key}
+              >
+                {formatters.dataKey(key)}
+              </Dropdown.Item>
+            ))}
+          </Dropdown.Menu>
+        )
+      }
     </Dropdown>
   );
 
   const aggTypeDropdown = (
     <Dropdown
       renderButton={(api) => (
-        <Dropdown.Button {...api}>Agg type: {aggType}</Dropdown.Button>
+        <Dropdown.Button
+          disabled={!aggTypeList.length > 0}
+          toggle={aggTypeList.length > 0}
+          {...api}
+        >
+          Agg type: {aggType}
+        </Dropdown.Button>
       )}
     >
-      {(api) => (
-        <Dropdown.Menu {...api}>
-          {aggTypeList.map((key) => (
-            <Dropdown.Item
-              onClick={() => updateAggType(key)}
-              active={aggType === key}
-              key={key}
-            >
-              {key}
-            </Dropdown.Item>
-          ))}
-        </Dropdown.Menu>
-      )}
+      {(api) =>
+        aggTypeList.length > 0 && (
+          <Dropdown.Menu {...api}>
+            {aggTypeList.map((key) => (
+              <Dropdown.Item
+                onClick={() => updateAggType(key)}
+                active={aggType === key}
+                key={key}
+              >
+                {key}
+              </Dropdown.Item>
+            ))}
+          </Dropdown.Menu>
+        )
+      }
     </Dropdown>
   );
 
