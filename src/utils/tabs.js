@@ -162,9 +162,9 @@ export default [
         rows: ["program", "concentration", ...allButConc(obj.rows)],
       }),
       lists: {
-        pivotColumn: allButConc,
-        aggType: (arr) => arr,
-        pivotRows: allButConc,
+        pivotColumn: () => [],
+        pivotRows: () => [],
+        aggType: () => [],
       },
       filterLists: (obj) =>
         Object.fromEntries(Object.entries(obj).filter(([k]) => k !== "total")),

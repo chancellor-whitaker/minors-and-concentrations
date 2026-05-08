@@ -1,6 +1,6 @@
+import { useState, useMemo, useRef } from "react";
 import { themeBalham } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { useState, useMemo } from "react";
 
 import MainContainer from "./components/MainContainer";
 import tabs, { dataPromise } from "./utils/tabs";
@@ -39,9 +39,10 @@ const getEveryValue = (data) => {
 // *formatting header names
 // *grid props accessor?
 // *if length of list is 0, don't show component/ui
+// *remove menu bar if lists are empty
 // *download button
+// *template (wrapper)
 // ?size columns to fit without truncating certain columns/responsive auto-sizing (based on dynamic width)
-// !remove menu bar if lists are empty
 // !filter state should be like faculty workload filter state
 // !should be able to set initial filters
 // ?should be able to control resetting behavior (how state resets between tabs)
@@ -178,7 +179,7 @@ export default function App() {
     "count",
   ]);
 
-  const pivotRowsDropdown = (
+  const pivotRowsDropdown = pivotRowsList.length > 0 && (
     <Dropdown
       renderButton={(api) => (
         <Dropdown.Button
@@ -207,7 +208,7 @@ export default function App() {
     </Dropdown>
   );
 
-  const pivotColumnDropdown = (
+  const pivotColumnDropdown = pivotColumnList.length > 0 && (
     <Dropdown
       renderButton={(api) => (
         <Dropdown.Button
@@ -237,7 +238,7 @@ export default function App() {
     </Dropdown>
   );
 
-  const aggTypeDropdown = (
+  const aggTypeDropdown = aggTypeList.length > 0 && (
     <Dropdown
       renderButton={(api) => (
         <Dropdown.Button
@@ -327,22 +328,41 @@ export default function App() {
     </Dropdown>
   );
 
+  const menuItems = [
+    pivotRowsDropdown,
+    pivotColumnDropdown,
+    aggTypeDropdown,
+  ].filter(Boolean);
+
+  const gridRef = useRef();
+
+  const onBtnExport = () => gridRef.current.api.exportDataAsCsv();
+
   return (
-    <MainContainer>
-      <SubContainer>{tabSwitcher}</SubContainer>
+    <>
       <SubContainer className="d-flex flex-wrap gap-2">
-        {pivotRowsDropdown}
-        {pivotColumnDropdown}
-        {aggTypeDropdown}
+        {tabSwitcher}
+        <button className="btn btn-success" onClick={onBtnExport} type="button">
+          Download CSV export file
+        </button>
       </SubContainer>
+      {menuItems.length > 0 && (
+        <SubContainer className="d-flex flex-wrap gap-2">
+          {menuItems}
+        </SubContainer>
+      )}
       <SubContainer className="d-flex flex-wrap gap-2">
         {filterableFields.map(renderDropdownFilter)}
       </SubContainer>
       <SubContainer>
         <div style={{ height: 500 }}>
-          <AgGridReact theme={themeBalham} {...gridProps}></AgGridReact>
+          <AgGridReact
+            theme={themeBalham}
+            ref={gridRef}
+            {...gridProps}
+          ></AgGridReact>
         </div>
       </SubContainer>
-    </MainContainer>
+    </>
   );
 }

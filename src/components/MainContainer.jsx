@@ -1,6 +1,6 @@
 export default function MainContainer({
-  as = "main",
   defaultClassName = "container",
+  as = "main",
   className,
   ...rest
 }) {
@@ -15,8 +15,8 @@ export default function MainContainer({
 }
 
 function SubContainer({
+  defaultClassName = "p-3 bg-body rounded shadow-sm",
   as = "div",
-  defaultClassName = "my-3 p-3 bg-body rounded shadow-sm",
   className,
   ...rest
 }) {
