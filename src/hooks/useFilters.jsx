@@ -2,8 +2,8 @@ import { useDeferredValue, useCallback, useState, useMemo } from "react";
 
 const toArray = (x) => [x].filter(Boolean).flat();
 
-export default function useFilterLists({ initialState, dropdownDefs, data }) {
-  const uniqueValues = useMemo(() => getUniqueValues(data), [data]);
+export default function useFilters({ initialState, data }) {
+  const lists = useMemo(() => getUniqueValues(data), [data]);
 
   const [state, setState] = useState();
 
@@ -11,70 +11,80 @@ export default function useFilterLists({ initialState, dropdownDefs, data }) {
 
   const deferredState = useDeferredValue(state);
 
-  const activeValueLookup = useMemo(
-    () => createActiveValueLookup(toArray(deferredState)),
+  const statusLookup = useMemo(
+    () => createStatusLookup(toArray(deferredState)),
     [deferredState],
   );
 
-  const isDataValueActive = useCallback(
-    (params) => createActiveValueChecker(params, activeValueLookup),
-    [activeValueLookup],
+  const isActive = useCallback(
+    (params) => createStatusChecker(params, statusLookup),
+    [statusLookup],
   );
 
   const filteredData = useMemo(
-    () => filterData(data, isDataValueActive),
-    [isDataValueActive, data],
+    () => filterData(data, isActive),
+    [isActive, data],
   );
 
-  const dropdownFilters = useMemo(() => {
-    const updateState = (params) => setState((s) => updateFilters(params, s));
+  const handleClick = (params) => setState((s) => updateFilters(params, s));
 
-    return dropdownDefs
-      .map((col) => ({
-        ...col,
-        values: uniqueValues[col.field],
-      }))
-      .map(({ values = [], displayName, field }) => {
-        const areAllActive = isDataValueActive({ field });
+  // const dropdownFilters = useMemo(() => {
+  //   const updateState = (params) => setState((s) => updateFilters(params, s));
 
-        const handleClickAll = () =>
-          updateState({ active: !areAllActive, field });
+  //   return dropdownDefs
+  //     .map((col) => ({
+  //       ...col,
+  //       values: uniqueValues[col.field],
+  //     }))
+  //     .map(({ values = [], displayName, field }) => {
+  //       const areAllActive = isActive({ field });
 
-        return (
-          <Dropdown
-            items={[
-              <DropdownItem onClick={handleClickAll} active={areAllActive}>
-                All
-              </DropdownItem>,
-              ...values.map((value) => {
-                const active = isDataValueActive({ field, value });
+  //       const handleClickAll = () =>
+  //         updateState({ active: !areAllActive, field });
 
-                return (
-                  <DropdownItem
-                    onClick={() =>
-                      updateState({ active: !active, field, value })
-                    }
-                    active={active}
-                    key={value}
-                  >
-                    {!value && typeof value !== "number" ? "-- N/A --" : value}
-                  </DropdownItem>
-                );
-              }),
-            ]}
-            variant={areAllActive ? "light" : "warning"}
-            key={field}
-          >
-            {displayName}
-          </Dropdown>
-        );
-      });
-  }, [uniqueValues, isDataValueActive, dropdownDefs]);
+  //       return (
+  //         <Dropdown
+  //           items={[
+  //             <DropdownItem onClick={handleClickAll} active={areAllActive}>
+  //               All
+  //             </DropdownItem>,
+  //             ...values.map((value) => {
+  //               const active = isActive({ field, value });
+
+  //               return (
+  //                 <DropdownItem
+  //                   onClick={() =>
+  //                     updateState({ active: !active, field, value })
+  //                   }
+  //                   active={active}
+  //                   key={value}
+  //                 >
+  //                   {!value && typeof value !== "number" ? "-- N/A --" : value}
+  //                 </DropdownItem>
+  //               );
+  //             }),
+  //           ]}
+  //           variant={areAllActive ? "light" : "warning"}
+  //           key={field}
+  //         >
+  //           {displayName}
+  //         </Dropdown>
+  //       );
+  //     });
+  // }, [uniqueValues, isActive, dropdownDefs]);
+
+  return {
+    filteredData,
+    handleClick,
+    isActive,
+    lists,
+    state,
+  };
 }
 
 const isAnAllBtn = (element) => !("value" in element);
 
-const createActiveValueLookup = (state) => {
+const createStatusLookup = (state) => {
   const lookup = {};
 
   state.forEach((element) => {
@@ -94,7 +104,7 @@ const createActiveValueLookup = (state) => {
   return lookup;
 };
 
-const createActiveValueChecker = (params, lookup) => {
+const createStatusChecker = (params, lookup) => {
   const { value, field } = params;
 
   if (!(field in lookup)) return true;

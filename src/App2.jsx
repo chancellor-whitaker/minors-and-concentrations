@@ -42,12 +42,70 @@ const getEveryValue = (data) => {
 // *remove menu bar if lists are empty
 // *download button
 // *template (wrapper)
-// ?size columns to fit without truncating certain columns/responsive auto-sizing (based on dynamic width)
+// ?is there an easier way to prevent filters from resetting when changing tabs?
+// ?size columns to fit without truncating certain columns (might be buggy)
+// !responsive auto-sizing (based on dynamic width)
 // !filter state should be like faculty workload filter state
 // !should be able to set initial filters
 // ?should be able to control resetting behavior (how state resets between tabs)
 // ?add column measuring logic
 // ?performance issues
+
+// ?will eventually want degrees (could be split into 2 dashboards)
+
+// const useDropdownFilters = ({ data }) => {
+//   const [state, setState] = useState();
+
+//   const lists = useMemo(() => getEveryValue(data), [data]);
+
+//   usePrevious(lists, () => setState(lists));
+
+//   const filteredData = useMemo(
+//     () =>
+//       data.filter((row) => {
+//         for (const [k, v] of Object.entries(row)) {
+//           if (state && k in state && !state[k].has(v)) {
+//             return false;
+//           }
+//         }
+
+//         return true;
+//       }),
+//     [data, state],
+//   );
+
+//   const handleClick = (a) =>
+//     setState((obj) =>
+//       Object.fromEntries(
+//         Object.entries(obj).map((entry) =>
+//           entry[0] !== a[0]
+//             ? entry
+//             : [
+//                 a[0],
+//                 a.length === 1
+//                   ? entry[1].size === lists[a[0]].size
+//                     ? new Set()
+//                     : new Set(lists[a[0]])
+//                   : entry[1].has(a[1])
+//                     ? new Set([...entry[1]].filter((s) => s !== a[1]))
+//                     : new Set([...entry[1], a[1]]),
+//               ],
+//         ),
+//       ),
+//     );
+
+//   const isEntireListActive = (k) =>
+//     state && k in state && state[k].size === lists[k].size;
+
+//   const isActive = (a) =>
+//     a.length === 1
+//       ? isEntireListActive(a[0])
+//       : state && a[0] in state && state[a[0]].has(a[1]);
+
+//   return { filteredData, handleClick, isActive, state, lists };
+// };
+
+// !how to add % calculation?
 
 export default function App() {
   const [filters, setFilters] = useState();
@@ -74,7 +132,7 @@ export default function App() {
   const originalData = usePromise(dataPromise);
 
   const data = useMemo(
-    () => accessorFns.data(originalData),
+    () => accessorFns.data([originalData].filter(Boolean).flat()),
     [accessorFns, originalData],
   );
 
@@ -127,12 +185,18 @@ export default function App() {
       ? areAllValuesActive(a[0])
       : filters && a[0] in filters && filters[a[0]].has(a[1]);
 
-  const rowData = pivotTable(filteredData, pivotConfig);
+  const [pivotEnabled, setPivotEnabled] = useState(true);
 
-  const pinnedTopRowData = pivotTable(filteredData, {
-    ...pivotConfig,
-    rows: [],
-  });
+  const rowData = !pivotEnabled
+    ? filteredData
+    : pivotTable(filteredData, pivotConfig);
+
+  const pinnedTopRowData = !pivotEnabled
+    ? []
+    : pivotTable(filteredData, {
+        ...pivotConfig,
+        rows: [],
+      });
 
   const columnDefs = [...new Set(rowData.flatMap(Object.keys))].map(
     (field) => ({ field }),
@@ -289,11 +353,13 @@ export default function App() {
 
   const filterableFields = Object.keys(initialFilters);
 
+  // isValueActive, areAllValuesActive, valuesPerKey, updateDropdowns
+
   const renderDropdownFilter = (k) => (
     <Dropdown
       renderButton={(api) => (
         <Dropdown.Button
-          variant={areAllValuesActive(k) ? "secondary" : "warning"}
+          variant={isValueActive([k]) ? "secondary" : "warning"}
           className="w-100"
           {...api}
         >

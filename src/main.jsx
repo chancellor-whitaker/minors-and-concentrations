@@ -14,7 +14,7 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <RemoteComponent
       url="https://irserver2.eku.edu/libraries/remote/r19-wrapper.cjs"
-      heading="Minors & Concentrations"
+      heading="Minors & Concentrations Enrollment"
     >
       <AgGridProvider modules={modules}>
         <App />

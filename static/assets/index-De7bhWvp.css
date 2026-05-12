@@ -1,0 +1,15 @@
+body {
+  --bs-bg-opacity: 1;
+  background-color: rgba(
+    var(--bs-tertiary-bg-rgb),
+    var(--bs-bg-opacity)
+  ) !important;
+}
+
+.ag-sort-order {
+  display: none;
+}
+
+button.btn {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}

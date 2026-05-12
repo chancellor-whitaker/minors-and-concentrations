@@ -1,6 +1,13 @@
+import { csv } from "d3-fetch";
+
 const fetchJson = (url) => fetch(url).then((res) => res.json());
 
-const autoSizeGrid = ({ api }) => api.autoSizeAllColumns();
+const autoSizeGrid = ({ api }) => {
+  api.autoSizeAllColumns();
+  api.sizeColumnsToFit();
+};
+
+// respond to event
 
 const autoSizeProps = {
   // autoSizeStrategy: { type: "fitCellContents" },
@@ -11,9 +18,13 @@ const autoSizeProps = {
 
 const dataOrder = ["base", "concentrations", "descriptions", "minors"];
 
-const promises = dataOrder.map((name) => fetchJson(`data/${name}.json`));
+const promises = dataOrder.map((name) => fetchJson(`data/m&c/${name}.json`));
 
-export const dataPromise = Promise.all(promises);
+// export const dataPromise = Promise.all(promises);
+
+export const dataPromise = csv(
+  "data/retention/202650_12MAY2026_ProgramEnrollments.csv",
+);
 
 const concDataAccessor = (result) => {
   if (!result) return [];
@@ -45,7 +56,7 @@ const minorDataAccessor = (result) => {
 
 const globalHeaderRules = { priority_no: "Program No.", ft_pt: "FT / PT" };
 
-const minorHeaderRules = { ...globalHeaderRules, priority: "Min. Priority" };
+const minorHeaderRules = { ...globalHeaderRules, priority: "Minor Priority" };
 
 const concHeaderRules = {
   ...globalHeaderRules,
@@ -54,15 +65,15 @@ const concHeaderRules = {
 
 const globalValueRules = {};
 
-const allButMinor = (arr) => arr.filter((s) => s !== "minor");
+const getAllButMinor = (arr) => arr.filter((s) => s !== "minor");
 
-const allButConc = (arr) =>
+const getAllButConc = (arr) =>
   arr.filter((s) => s !== "program" && s !== "concentration");
 
 const defaultValueFormatter = ({ value }) => value?.toLocaleString();
 
 const getMinorColDefs = (arr) => {
-  const fieldDefs = { minor: { sort: "asc" } };
+  const fieldDefs = { minor: { suppressSizeToFit: true, sort: "asc" } };
 
   return arr.map((def) => ({
     ...def,
@@ -86,8 +97,8 @@ const concDKeyFormatter = (k) =>
 
 const getConcColDefs = (arr) => {
   const fieldDefs = {
-    concentration: { sortIndex: 1, sort: "asc" },
-    program: { sortIndex: 0, sort: "asc" },
+    concentration: { suppressSizeToFit: true, sortIndex: 1, sort: "asc" },
+    program: { suppressSizeToFit: true, sortIndex: 0, sort: "asc" },
   };
 
   return arr.map((def) => ({
@@ -97,7 +108,85 @@ const getConcColDefs = (arr) => {
   }));
 };
 
+const returnSelf = (x) => x;
+
+const filtersToRemove = new Set(["retained", "cohort", "term", "URM"]);
+
+const rArrow = "→";
+
+const parseArrows = (colDefs) => {
+  const arr = [];
+
+  const findColGroup = (str) =>
+    arr.find(({ headerName }) => headerName === str.split(rArrow)[0]);
+
+  const addColGroup = (str) =>
+    arr.push({ headerName: str.split(rArrow)[0], children: [] });
+
+  const findColChild = (str, element) =>
+    element.children.find(({ field }) => field === str.split(rArrow)[1]);
+
+  const addColChild = (str, element) =>
+    element.children.push({ headerName: str.split(rArrow)[1], field: str });
+
+  const filteredColDefs = colDefs.filter(({ field }) => field.includes(rArrow));
+
+  filteredColDefs.forEach(({ field }) => {
+    if (!findColGroup(field)) addColGroup(field);
+
+    const colGroup = findColGroup(field);
+
+    if (!findColChild(field, colGroup)) addColChild(field, colGroup);
+  });
+
+  return arr;
+};
+
 export default [
+  {
+    accessorFns: {
+      gridProps: ({ columnDefs, ...params }, { pivotConfig: { rows } }) => {
+        const colDefs = [
+          ...columnDefs.filter(({ field }) => !field.includes(rArrow)),
+          ...parseArrows(columnDefs),
+        ];
+
+        return {
+          columnDefs: colDefs.map((def) => ({
+            ...def,
+            suppressSizeToFit: rows.includes(def.field),
+          })),
+          ...params,
+          ...autoSizeProps,
+        };
+      },
+      filterLists: (x) =>
+        Object.fromEntries(
+          Object.entries(x).filter(([k]) => !filtersToRemove.has(k)),
+        ),
+      lists: {
+        pivotColumn: () => [],
+        pivotRows: returnSelf,
+        aggType: () => [],
+      },
+      pivotConfig: returnSelf,
+      data: returnSelf,
+    },
+    initialStates: {
+      pivotConfig: {
+        value: ["cohort", "retained"],
+        rows: ["Program"],
+        column: "term",
+        agg: "sum",
+      },
+    },
+    formatters: {
+      dataValue: ([, v]) => v,
+      dataKey: snakeToTitle,
+    },
+    label: "Retention",
+    id: "retention",
+  },
   {
     accessorFns: {
       gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
@@ -119,7 +208,7 @@ export default [
       },
       pivotConfig: (obj) => ({
         ...obj,
-        rows: ["minor", ...allButMinor(obj.rows)],
+        rows: ["minor", ...getAllButMinor(obj.rows)],
       }),
       filterLists: (obj) =>
         Object.fromEntries(Object.entries(obj).filter(([k]) => k !== "total")),
@@ -159,7 +248,7 @@ export default [
       },
       pivotConfig: (obj) => ({
         ...obj,
-        rows: ["program", "concentration", ...allButConc(obj.rows)],
+        rows: ["program", "concentration", ...getAllButConc(obj.rows)],
       }),
       lists: {
         pivotColumn: () => [],

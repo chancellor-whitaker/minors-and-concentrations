@@ -5,12 +5,22 @@ export default function pivotTable(
   const pivot = {};
   const columnsSet = new Set();
 
+  const values = Array.isArray(value) ? value : [value];
+
   const rowKeyFn = (item) => rows.map((r) => item[r]).join("||");
+
+  function createStats() {
+    return {
+      max: -Infinity,
+      min: Infinity,
+      count: 0,
+      sum: 0,
+    };
+  }
 
   for (const item of data) {
     const rKey = rowKeyFn(item);
     const cKey = item[column];
-    const val = Number(item[value]);
 
     columnsSet.add(cKey);
 
@@ -24,25 +34,25 @@ export default function pivotTable(
     }
 
     if (!pivot[rKey][cKey]) {
-      pivot[rKey][cKey] = {
-        max: -Infinity,
-        min: Infinity,
-        count: 0,
-        sum: 0,
-      };
+      pivot[rKey][cKey] = {};
+      for (const v of values) {
+        pivot[rKey][cKey][v] = createStats();
+      }
     }
 
     const cell = pivot[rKey][cKey];
 
-    // update stats
-    if (!isNaN(val)) {
-      cell.sum += val;
-      cell.count += 1;
-      cell.min = Math.min(cell.min, val);
-      cell.max = Math.max(cell.max, val);
-    } else {
-      // still count rows if no value provided (for pure count use-case)
-      cell.count += 1;
+    for (const v of values) {
+      const val = Number(item[v]);
+
+      if (!isNaN(val)) {
+        cell[v].sum += val;
+        cell[v].count += 1;
+        cell[v].min = Math.min(cell[v].min, val);
+        cell[v].max = Math.max(cell[v].max, val);
+      } else {
+        cell[v].count += 1;
+      }
     }
   }
 
@@ -54,27 +64,37 @@ export default function pivotTable(
     for (const c of columns) {
       const cell = entry[c];
 
-      if (!cell) {
-        obj[c] = 0;
-        continue;
-      }
+      for (const v of values) {
+        const key = `${c}→${v}`;
 
-      switch (agg) {
-        case "sum":
-          obj[c] = cell.sum;
-          break;
-        case "avg":
-          obj[c] = cell.count ? cell.sum / cell.count : 0;
-          break;
-        case "min":
-          obj[c] = cell.min === Infinity ? 0 : cell.min;
-          break;
-        case "max":
-          obj[c] = cell.max === -Infinity ? 0 : cell.max;
-          break;
-        case "count":
-        default:
-          obj[c] = cell.count;
+        if (!cell) {
+          obj[key] = 0;
+          continue;
+        }
+
+        const s = cell[v];
+
+        switch (agg) {
+          case "sum":
+            obj[key] = s.sum;
+            break;
+
+          case "avg":
+            obj[key] = s.count ? s.sum / s.count : 0;
+            break;
+
+          case "min":
+            obj[key] = s.min === Infinity ? 0 : s.min;
+            break;
+
+          case "max":
+            obj[key] = s.max === -Infinity ? 0 : s.max;
+            break;
+
+          case "count":
+          default:
+            obj[key] = s.count;
+        }
       }
     }
 
