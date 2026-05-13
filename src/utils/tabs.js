@@ -54,7 +54,11 @@ const minorDataAccessor = (result) => {
   }));
 };
 
-const globalHeaderRules = { priority_no: "Program No", ft_pt: "FT / PT" };
+const globalHeaderRules = {
+  college: "Student College",
+  priority_no: "Program No",
+  ft_pt: "FT / PT",
+};
 
 const minorHeaderRules = { ...globalHeaderRules, priority: "Minor Priority" };
 
@@ -125,7 +129,12 @@ const parseArrows = (colDefs) => {
     element.children.find(({ field }) => field === str.split(rArrow)[1]);
 
   const addColChild = (str, element) =>
-    element.children.push({ headerName: str.split(rArrow)[1], field: str });
+    element.children.push({
+      valueFormatter: defaultValueFormatter,
+      headerName: str.split(rArrow)[1],
+      type: "numericColumn",
+      field: str,
+    });
 
   const filteredColDefs = colDefs.filter(({ field }) => field.includes(rArrow));
 
@@ -142,12 +151,32 @@ const parseArrows = (colDefs) => {
 
 const getFilterLists = (obj, ...arr) =>
   Object.fromEntries(
-    Object.entries(obj).filter(
-      ([k]) =>
-        !["retained", "cohort", "total", "race", "sex", "URM", ...arr].includes(
-          k,
-        ),
-    ),
+    Object.entries(obj)
+      .filter(
+        ([k]) =>
+          ![
+            "residency",
+            "retained",
+            "cohort",
+            "total",
+            "race",
+            "sex",
+            "URM",
+            ...arr,
+          ].includes(k),
+      )
+      .map((entry) =>
+        entry[0] !== "minor"
+          ? entry
+          : [
+              entry[0],
+              new Set(
+                [...entry[1]].filter(
+                  (x) => !["Honors Maroon", "Honors Gold"].includes(x),
+                ),
+              ),
+            ],
+      ),
   );
 
 const dataValueFormatter = ([k, v]) =>
@@ -155,33 +184,33 @@ const dataValueFormatter = ([k, v]) =>
     ? globalValueRules[k][v]
     : v;
 
-const retentionTab = {
-  accessorFns: {
-    gridProps: ({ columnDefs, ...params }, { pivotConfig: { rows } }) => {
-      const colDefs = [
-        ...columnDefs.filter(({ field }) => !field.includes(rArrow)),
-        ...parseArrows(columnDefs),
-      ];
+const getGridProps = ({ columnDefs, ...params }, { pivotConfig: { rows } }) => {
+  const colDefs = [
+    ...columnDefs.filter(({ field }) => !field.includes(rArrow)),
+    ...parseArrows(columnDefs),
+  ];
 
-      return {
-        columnDefs: colDefs.map((def) => ({
-          ...def,
-          suppressSizeToFit: rows.includes(def.field),
-        })),
-        // columnDefs,
-        ...params,
-        ...autoSizeProps,
-      };
-    },
-    lists: {
-      pivotColumn: () => [],
-      pivotRows: returnSelf,
-      aggType: () => [],
-    },
-    filterLists: (obj) => getFilterLists(obj, "term"),
-    data: (x) => (!x ? [] : x),
-    pivotConfig: returnSelf,
-  },
+  const check = (def) =>
+    rows.includes(def.field)
+      ? {
+          sortIndex: rows.indexOf(def.field),
+          suppressSizeToFit: true,
+          sort: "asc",
+        }
+      : {};
+
+  return {
+    columnDefs: colDefs.map((def) => ({
+      ...def,
+      ...check(def),
+    })),
+    // columnDefs,
+    ...params,
+    ...autoSizeProps,
+  };
+};
+
+const retentionTab = {
   initialStates: {
     pivotConfig: {
       derived: {
@@ -193,6 +222,17 @@ const retentionTab = {
       column: "term",
       agg: "sum",
     },
+  },
+  accessorFns: {
+    lists: {
+      pivotColumn: () => [],
+      pivotRows: returnSelf,
+      aggType: () => [],
+    },
+    filterLists: (obj) => getFilterLists(obj, "term"),
+    data: (x) => (!x ? [] : x),
+    gridProps: getGridProps,
+    pivotConfig: returnSelf,
   },
   formatters: {
     dataValue: ([, v]) => v,
