@@ -3,8 +3,8 @@ import { csv } from "d3-fetch";
 const fetchJson = (url) => fetch(url).then((res) => res.json());
 
 const autoSizeGrid = ({ api }) => {
-  // api.autoSizeAllColumns();
-  api.sizeColumnsToFit();
+  api.autoSizeAllColumns();
+  // api.sizeColumnsToFit();
 };
 
 const autoSizeProps = {
@@ -168,6 +168,7 @@ const retentionTab = {
           ...def,
           suppressSizeToFit: rows.includes(def.field),
         })),
+        // columnDefs,
         ...params,
         ...autoSizeProps,
       };
@@ -183,6 +184,10 @@ const retentionTab = {
   },
   initialStates: {
     pivotConfig: {
+      derived: {
+        "retained/cohort": (cell) =>
+          cell.cohort.sum ? cell.retained.sum / cell.cohort.sum : 0,
+      },
       value: ["cohort", "retained"],
       rows: ["Program"],
       column: "term",

@@ -6,7 +6,7 @@ import MainContainer from "./components/MainContainer";
 import tabs, { dataPromise } from "./utils/tabs";
 import usePrevious from "./hooks/usePrevious";
 import Dropdown from "./components/Dropdown";
-import pivotTable from "./utils/pivotTable";
+import pivotTable from "./utils/pivotTable2";
 import usePromise from "./hooks/usePromise";
 
 const { SubContainer } = MainContainer;
@@ -42,11 +42,8 @@ const getEveryValue = (data) => {
 // *remove menu bar if lists are empty
 // *download button
 // *template (wrapper)
+// *size columns to fit without truncating certain columns (might be buggy)
 // ?is there an easier way to prevent filters from resetting when changing tabs?
-// ?size columns to fit without truncating certain columns (might be buggy)
-// !responsive auto-sizing (based on dynamic width)
-// !filter state should be like faculty workload filter state
-// !should be able to set initial filters
 // ?should be able to control resetting behavior (how state resets between tabs)
 // ?add column measuring logic
 // ?performance issues
@@ -105,7 +102,12 @@ const getEveryValue = (data) => {
 //   return { filteredData, handleClick, isActive, state, lists };
 // };
 
-// !how to add % calculation?
+// *how to add % calculation?
+// ?would it be possible to have tabs be a js file appended to the window?
+// !add search to dropdowns
+// ?responsive auto-sizing (based on dynamic width)
+// !filter state should be like faculty workload filter state
+// !should be able to set initial filters
 
 export default function App() {
   const [filters, setFilters] = useState();
