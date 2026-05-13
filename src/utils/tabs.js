@@ -3,11 +3,9 @@ import { csv } from "d3-fetch";
 const fetchJson = (url) => fetch(url).then((res) => res.json());
 
 const autoSizeGrid = ({ api }) => {
-  api.autoSizeAllColumns();
+  // api.autoSizeAllColumns();
   api.sizeColumnsToFit();
 };
-
-// respond to event
 
 const autoSizeProps = {
   // autoSizeStrategy: { type: "fitCellContents" },
@@ -20,11 +18,13 @@ const dataOrder = ["base", "concentrations", "descriptions", "minors"];
 
 const promises = dataOrder.map((name) => fetchJson(`data/m&c/${name}.json`));
 
-// export const dataPromise = Promise.all(promises);
+const dataPromise1 = Promise.all(promises);
 
-export const dataPromise = csv(
+export const dataPromise2 = csv(
   "data/retention/202650_12MAY2026_ProgramEnrollments.csv",
 );
+
+export const dataPromise = dataPromise2;
 
 const concDataAccessor = (result) => {
   if (!result) return [];
@@ -54,7 +54,7 @@ const minorDataAccessor = (result) => {
   }));
 };
 
-const globalHeaderRules = { priority_no: "Program No.", ft_pt: "FT / PT" };
+const globalHeaderRules = { priority_no: "Program No", ft_pt: "FT / PT" };
 
 const minorHeaderRules = { ...globalHeaderRules, priority: "Minor Priority" };
 
@@ -110,8 +110,6 @@ const getConcColDefs = (arr) => {
 
 const returnSelf = (x) => x;
 
-const filtersToRemove = new Set(["retained", "cohort", "term", "URM"]);
-
 const rArrow = "→";
 
 const parseArrows = (colDefs) => {
@@ -142,142 +140,144 @@ const parseArrows = (colDefs) => {
   return arr;
 };
 
-export default [
-  {
-    accessorFns: {
-      gridProps: ({ columnDefs, ...params }, { pivotConfig: { rows } }) => {
-        const colDefs = [
-          ...columnDefs.filter(({ field }) => !field.includes(rArrow)),
-          ...parseArrows(columnDefs),
-        ];
-
-        return {
-          columnDefs: colDefs.map((def) => ({
-            ...def,
-            suppressSizeToFit: rows.includes(def.field),
-          })),
-          ...params,
-          ...autoSizeProps,
-        };
-      },
-      filterLists: (x) =>
-        Object.fromEntries(
-          Object.entries(x).filter(([k]) => !filtersToRemove.has(k)),
+const getFilterLists = (obj, ...arr) =>
+  Object.fromEntries(
+    Object.entries(obj).filter(
+      ([k]) =>
+        !["retained", "cohort", "total", "race", "sex", "URM", ...arr].includes(
+          k,
         ),
-      lists: {
-        pivotColumn: () => [],
-        pivotRows: returnSelf,
-        aggType: () => [],
-      },
-      pivotConfig: returnSelf,
-      data: returnSelf,
-    },
-    initialStates: {
-      pivotConfig: {
-        value: ["cohort", "retained"],
-        rows: ["Program"],
-        column: "term",
-        agg: "sum",
-      },
-    },
-    formatters: {
-      dataValue: ([, v]) => v,
-      dataKey: snakeToTitle,
-    },
-    label: "Retention",
-    id: "retention",
-  },
-  {
-    accessorFns: {
-      gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
-        const pivotRows = pivotConfig.rows;
+    ),
+  );
 
-        return {
-          ...params,
-          ...autoSizeProps,
-          columnDefs: getMinorColDefs(columnDefs).map((o) => ({
-            ...o,
-            type: pivotRows.includes(o.field) ? null : "numericColumn",
-          })),
-        };
-      },
-      lists: {
-        pivotColumn: () => [],
-        pivotRows: () => [],
-        aggType: () => [],
-      },
-      pivotConfig: (obj) => ({
-        ...obj,
-        rows: ["minor", ...getAllButMinor(obj.rows)],
-      }),
-      filterLists: (obj) =>
-        Object.fromEntries(Object.entries(obj).filter(([k]) => k !== "total")),
-      data: minorDataAccessor,
-    },
-    formatters: {
-      dataValue: ([k, v]) =>
-        k in globalValueRules && v in globalValueRules[k]
-          ? globalValueRules[k][v]
-          : v,
-      dataKey: minorDKeyFormatter,
-    },
-    initialStates: {
-      pivotConfig: {
-        rows: ["minor"],
-        column: "term",
-        value: "total",
-        agg: "sum",
-      },
-    },
-    label: "Minors",
-    id: "minors",
-  },
-  {
-    accessorFns: {
-      gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
-        const pivotRows = pivotConfig.rows;
+const dataValueFormatter = ([k, v]) =>
+  k in globalValueRules && v in globalValueRules[k]
+    ? globalValueRules[k][v]
+    : v;
 
-        return {
-          ...params,
-          ...autoSizeProps,
-          columnDefs: getConcColDefs(columnDefs).map((o) => ({
-            ...o,
-            type: pivotRows.includes(o.field) ? null : "numericColumn",
-          })),
-        };
-      },
-      pivotConfig: (obj) => ({
-        ...obj,
-        rows: ["program", "concentration", ...getAllButConc(obj.rows)],
-      }),
-      lists: {
-        pivotColumn: () => [],
-        pivotRows: () => [],
-        aggType: () => [],
-      },
-      filterLists: (obj) =>
-        Object.fromEntries(Object.entries(obj).filter(([k]) => k !== "total")),
-      data: concDataAccessor,
+const retentionTab = {
+  accessorFns: {
+    gridProps: ({ columnDefs, ...params }, { pivotConfig: { rows } }) => {
+      const colDefs = [
+        ...columnDefs.filter(({ field }) => !field.includes(rArrow)),
+        ...parseArrows(columnDefs),
+      ];
+
+      return {
+        columnDefs: colDefs.map((def) => ({
+          ...def,
+          suppressSizeToFit: rows.includes(def.field),
+        })),
+        ...params,
+        ...autoSizeProps,
+      };
     },
-    formatters: {
-      dataValue: ([k, v]) =>
-        k in globalValueRules && v in globalValueRules[k]
-          ? globalValueRules[k][v]
-          : v,
-      dataKey: concDKeyFormatter,
+    lists: {
+      pivotColumn: () => [],
+      pivotRows: returnSelf,
+      aggType: () => [],
     },
-    initialStates: {
-      pivotConfig: {
-        rows: ["program", "concentration"],
-        column: "term",
-        value: "total",
-        agg: "sum",
-      },
-    },
-    label: "Concentrations",
-    id: "concentrations",
+    filterLists: (obj) => getFilterLists(obj, "term"),
+    data: (x) => (!x ? [] : x),
+    pivotConfig: returnSelf,
   },
-];
+  initialStates: {
+    pivotConfig: {
+      value: ["cohort", "retained"],
+      rows: ["Program"],
+      column: "term",
+      agg: "sum",
+    },
+  },
+  formatters: {
+    dataValue: ([, v]) => v,
+    dataKey: snakeToTitle,
+  },
+  label: "Retention",
+  id: "retention",
+};
+
+const minorTab = {
+  accessorFns: {
+    gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
+      const pivotRows = pivotConfig.rows;
+
+      return {
+        ...params,
+        ...autoSizeProps,
+        columnDefs: getMinorColDefs(columnDefs).map((o) => ({
+          ...o,
+          type: pivotRows.includes(o.field) ? null : "numericColumn",
+        })),
+      };
+    },
+    pivotConfig: (obj) => ({
+      ...obj,
+      rows: ["minor", ...getAllButMinor(obj.rows)],
+    }),
+    lists: {
+      pivotColumn: () => [],
+      pivotRows: () => [],
+      aggType: () => [],
+    },
+    filterLists: getFilterLists,
+    data: minorDataAccessor,
+  },
+  initialStates: {
+    pivotConfig: {
+      rows: ["minor"],
+      column: "term",
+      value: "total",
+      agg: "sum",
+    },
+  },
+  formatters: { dataValue: dataValueFormatter, dataKey: minorDKeyFormatter },
+  label: "Minors",
+  id: "minors",
+};
+
+const concTab = {
+  accessorFns: {
+    gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
+      const pivotRows = pivotConfig.rows;
+
+      return {
+        ...params,
+        ...autoSizeProps,
+        columnDefs: getConcColDefs(columnDefs).map((o) => ({
+          ...o,
+          type: pivotRows.includes(o.field) ? null : "numericColumn",
+        })),
+      };
+    },
+    pivotConfig: (obj) => ({
+      ...obj,
+      rows: ["program", "concentration", ...getAllButConc(obj.rows)],
+    }),
+    lists: {
+      pivotColumn: () => [],
+      pivotRows: () => [],
+      aggType: () => [],
+    },
+    filterLists: getFilterLists,
+    data: concDataAccessor,
+  },
+  initialStates: {
+    pivotConfig: {
+      rows: ["program", "concentration"],
+      column: "term",
+      value: "total",
+      agg: "sum",
+    },
+  },
+  formatters: { dataValue: dataValueFormatter, dataKey: concDKeyFormatter },
+  label: "Concentrations",
+  id: "concentrations",
+};
+
+export default dataPromise === dataPromise1
+  ? [minorTab, concTab]
+  : [retentionTab];
 
 // props api
 // - formatters

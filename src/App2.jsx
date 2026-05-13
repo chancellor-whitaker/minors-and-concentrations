@@ -132,7 +132,7 @@ export default function App() {
   const originalData = usePromise(dataPromise);
 
   const data = useMemo(
-    () => accessorFns.data([originalData].filter(Boolean).flat()),
+    () => accessorFns.data(originalData),
     [accessorFns, originalData],
   );
 
