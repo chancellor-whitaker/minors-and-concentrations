@@ -24,7 +24,7 @@ export const dataPromise2 = csv(
   "data/retention/202650_12MAY2026_ProgramEnrollments.csv",
 );
 
-export const dataPromise = dataPromise2;
+export const dataPromise = dataPromise1;
 
 const concDataAccessor = (result) => {
   if (!result) return [];
@@ -116,6 +116,14 @@ const returnSelf = (x) => x;
 
 const rArrow = "→";
 
+const formatter = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2, // Forces 2 decimal places (e.g., 25.00%)
+  maximumFractionDigits: 2,
+  style: "percent",
+});
+
+const formatPercentage = ({ value }) => formatter.format(value);
+
 const parseArrows = (colDefs) => {
   const arr = [];
 
@@ -130,8 +138,10 @@ const parseArrows = (colDefs) => {
 
   const addColChild = (str, element) =>
     element.children.push({
-      valueFormatter: defaultValueFormatter,
-      headerName: str.split(rArrow)[1],
+      valueFormatter: str.includes("%")
+        ? formatPercentage
+        : defaultValueFormatter,
+      headerName: snakeToTitle(str.split(rArrow)[1]),
       type: "numericColumn",
       field: str,
     });
@@ -184,25 +194,25 @@ const dataValueFormatter = ([k, v]) =>
     ? globalValueRules[k][v]
     : v;
 
+const check = (rows, def) =>
+  rows.includes(def.field)
+    ? {
+        sortIndex: rows.indexOf(def.field),
+        suppressSizeToFit: true,
+        sort: "asc",
+      }
+    : {};
+
 const getGridProps = ({ columnDefs, ...params }, { pivotConfig: { rows } }) => {
   const colDefs = [
     ...columnDefs.filter(({ field }) => !field.includes(rArrow)),
     ...parseArrows(columnDefs),
   ];
 
-  const check = (def) =>
-    rows.includes(def.field)
-      ? {
-          sortIndex: rows.indexOf(def.field),
-          suppressSizeToFit: true,
-          sort: "asc",
-        }
-      : {};
-
   return {
     columnDefs: colDefs.map((def) => ({
       ...def,
-      ...check(def),
+      ...check(rows, def),
     })),
     // columnDefs,
     ...params,
@@ -214,7 +224,7 @@ const retentionTab = {
   initialStates: {
     pivotConfig: {
       derived: {
-        "retained/cohort": (cell) =>
+        "%": (cell) =>
           cell.cohort.sum ? cell.retained.sum / cell.cohort.sum : 0,
       },
       value: ["cohort", "retained"],

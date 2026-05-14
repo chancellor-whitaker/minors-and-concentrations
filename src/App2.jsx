@@ -112,6 +112,8 @@ const getEveryValue = (data) => {
 export default function App() {
   const [filters, setFilters] = useState();
 
+  const [searchStrings, setSearchStrings] = useState();
+
   const [tabId, setTabId] = useState(tabs[0].id);
 
   const { initialStates, accessorFns, formatters } = useMemo(
@@ -143,7 +145,24 @@ export default function App() {
     [accessorFns, data],
   );
 
-  usePrevious(initialFilters, () => setFilters(initialFilters));
+  const initFilters = () => {
+    setFilters(initialFilters);
+
+    setSearchStrings(
+      Object.fromEntries(Object.entries(initialFilters).map(([k]) => [k, ""])),
+    );
+  };
+
+  const onSearchChange = ({ target }) =>
+    setSearchStrings((state) =>
+      Object.fromEntries(
+        Object.entries(state).map((entry) =>
+          entry[0] === target.name ? [target.name, target.value] : entry,
+        ),
+      ),
+    );
+
+  usePrevious(initialFilters, initFilters);
 
   const filteredData = useMemo(
     () =>
@@ -373,24 +392,37 @@ export default function App() {
     >
       {(api) => (
         <Dropdown.Menu {...api}>
+          <form className="p-2 mb-2 bg-body-tertiary border-bottom">
+            <input
+              placeholder="Type to filter..."
+              onChange={onSearchChange}
+              value={searchStrings[k]}
+              className="form-control"
+              autoComplete="false"
+              type="search"
+              name={k}
+            />
+          </form>
+
           <Dropdown.Item
             onClick={() => updateFilters([k])}
             active={isValueActive([k])}
           >
             All
           </Dropdown.Item>
-          {(initialFilters && k in initialFilters
-            ? [...initialFilters[k]]
-            : []
-          ).map((v) => (
-            <Dropdown.Item
-              onClick={() => updateFilters([k, v])}
-              active={isValueActive([k, v])}
-              key={v}
-            >
-              {formatters.dataValue([k, v])}
-            </Dropdown.Item>
-          ))}
+          {(initialFilters && k in initialFilters ? [...initialFilters[k]] : [])
+            .filter((v) =>
+              v.toLowerCase().includes(searchStrings[k].toLowerCase()),
+            )
+            .map((v) => (
+              <Dropdown.Item
+                onClick={() => updateFilters([k, v])}
+                active={isValueActive([k, v])}
+                key={v}
+              >
+                {formatters.dataValue([k, v])}
+              </Dropdown.Item>
+            ))}
         </Dropdown.Menu>
       )}
     </Dropdown>
