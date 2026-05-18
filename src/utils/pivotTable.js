@@ -1,11 +1,13 @@
 export default function pivotTable(
   data,
-  { agg = "count", column, value, rows },
+  { agg = "count", derived = {}, column, value, rows },
 ) {
   const pivot = {};
   const columnsSet = new Set();
 
   const values = Array.isArray(value) ? value : [value];
+
+  const aggs = Array.isArray(agg) ? agg : [agg];
 
   const rowKeyFn = (item) => rows.map((r) => item[r]).join("||");
 
@@ -17,6 +19,30 @@ export default function pivotTable(
       sum: 0,
     };
   }
+
+  function finalizeAgg(stats, aggName) {
+    switch (aggName) {
+      case "sum":
+        return stats.sum;
+
+      case "avg":
+        return stats.count ? stats.sum / stats.count : 0;
+
+      case "min":
+        return stats.min === Infinity ? 0 : stats.min;
+
+      case "max":
+        return stats.max === -Infinity ? 0 : stats.max;
+
+      case "count":
+      default:
+        return stats.count;
+    }
+  }
+
+  // =========================
+  // BUILD AGGREGATION CUBE
+  // =========================
 
   for (const item of data) {
     const rKey = rowKeyFn(item);
@@ -35,6 +61,7 @@ export default function pivotTable(
 
     if (!pivot[rKey][cKey]) {
       pivot[rKey][cKey] = {};
+
       for (const v of values) {
         pivot[rKey][cKey][v] = createStats();
       }
@@ -44,19 +71,24 @@ export default function pivotTable(
 
     for (const v of values) {
       const val = Number(item[v]);
+      const stats = cell[v];
 
       if (!isNaN(val)) {
-        cell[v].sum += val;
-        cell[v].count += 1;
-        cell[v].min = Math.min(cell[v].min, val);
-        cell[v].max = Math.max(cell[v].max, val);
+        stats.sum += val;
+        stats.count += 1;
+        stats.min = Math.min(stats.min, val);
+        stats.max = Math.max(stats.max, val);
       } else {
-        cell[v].count += 1;
+        stats.count += 1;
       }
     }
   }
 
   const columns = Array.from(columnsSet);
+
+  // =========================
+  // BUILD FINAL OUTPUT
+  // =========================
 
   return Object.values(pivot).map((entry) => {
     const obj = { ...entry._keys };
@@ -64,37 +96,45 @@ export default function pivotTable(
     for (const c of columns) {
       const cell = entry[c];
 
+      // no data for this pivot column
+      if (!cell) {
+        for (const v of values) {
+          for (const a of aggs) {
+            obj[`${c}→${v}→${a}`] = 0;
+          }
+        }
+
+        for (const derivedKey of Object.keys(derived)) {
+          obj[`${c}→${derivedKey}`] = 0;
+        }
+
+        continue;
+      }
+
+      // =========================
+      // STANDARD AGGS
+      // =========================
+
+      const finalized = {};
+
       for (const v of values) {
-        const key = `${c}→${v}`;
+        finalized[v] = {};
 
-        if (!cell) {
-          obj[key] = 0;
-          continue;
+        for (const a of aggs) {
+          const result = finalizeAgg(cell[v], a);
+
+          finalized[v][a] = result;
+
+          obj[`${c}→${v}→${a}`] = result;
         }
+      }
 
-        const s = cell[v];
+      // =========================
+      // DERIVED METRICS
+      // =========================
 
-        switch (agg) {
-          case "sum":
-            obj[key] = s.sum;
-            break;
-
-          case "avg":
-            obj[key] = s.count ? s.sum / s.count : 0;
-            break;
-
-          case "min":
-            obj[key] = s.min === Infinity ? 0 : s.min;
-            break;
-
-          case "max":
-            obj[key] = s.max === -Infinity ? 0 : s.max;
-            break;
-
-          case "count":
-          default:
-            obj[key] = s.count;
-        }
+      for (const [derivedKey, fn] of Object.entries(derived)) {
+        obj[`${c}→${derivedKey}`] = fn(finalized);
       }
     }
 

@@ -24,7 +24,7 @@ export const dataPromise2 = csv(
   "data/retention/202650_12MAY2026_ProgramEnrollments.csv",
 );
 
-export const dataPromise = dataPromise1;
+export const dataPromise = dataPromise2;
 
 const concDataAccessor = (result) => {
   if (!result) return [];
@@ -64,7 +64,7 @@ const minorHeaderRules = { ...globalHeaderRules, priority: "Minor Priority" };
 
 const concHeaderRules = {
   ...globalHeaderRules,
-  priority: "Conc. Priority",
+  priority: "Conc Priority",
 };
 
 const globalValueRules = {};
@@ -257,11 +257,15 @@ const minorTab = {
     gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
       const pivotRows = pivotConfig.rows;
 
+      const getHeaderName = (f) =>
+        f.includes(rArrow) ? { headerName: f.split(rArrow)[0] } : {};
+
       return {
         ...params,
         ...autoSizeProps,
         columnDefs: getMinorColDefs(columnDefs).map((o) => ({
           ...o,
+          ...getHeaderName(o.field),
           type: pivotRows.includes(o.field) ? null : "numericColumn",
         })),
       };
@@ -296,11 +300,15 @@ const concTab = {
     gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
       const pivotRows = pivotConfig.rows;
 
+      const getHeaderName = (f) =>
+        f.includes(rArrow) ? { headerName: f.split(rArrow)[0] } : {};
+
       return {
         ...params,
         ...autoSizeProps,
         columnDefs: getConcColDefs(columnDefs).map((o) => ({
           ...o,
+          ...getHeaderName(o.field),
           type: pivotRows.includes(o.field) ? null : "numericColumn",
         })),
       };

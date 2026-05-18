@@ -3,11 +3,10 @@ import { themeBalham } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 
 import MainContainer from "./components/MainContainer";
-import tabs, { dataPromise } from "./utils/tabs";
 import usePrevious from "./hooks/usePrevious";
 import Dropdown from "./components/Dropdown";
-import pivotTable from "./utils/pivotTable2";
-import usePromise from "./hooks/usePromise";
+import pivotTable from "./utils/pivotTable";
+import tabs from "./utils/tabs";
 
 const { SubContainer } = MainContainer;
 
@@ -103,13 +102,27 @@ const getEveryValue = (data) => {
 // };
 
 // *how to add % calculation?
+// *add search to dropdowns
 // ?would it be possible to have tabs be a js file appended to the window?
-// !add search to dropdowns
 // ?responsive auto-sizing (based on dynamic width)
 // !filter state should be like faculty workload filter state
 // !should be able to set initial filters
+// !footnote that this is based on official enrollment numbers
 
-export default function App() {
+// retention
+// !file list
+// ?query params (route per file)
+
+// minors & conc
+// ?minor college dropdown
+
+// both
+// !performance
+// !styling
+// ?file organization
+// ?utilize better filter state version
+
+export default function App({ data: originalData, footnote, children }) {
   const [filters, setFilters] = useState();
 
   const [searchStrings, setSearchStrings] = useState();
@@ -133,7 +146,7 @@ export default function App() {
 
   const { column: pivotColumn, rows: pivotRows, agg: aggType } = pivotConfig;
 
-  const originalData = usePromise(dataPromise);
+  // const originalData = usePromise(dataPromise);
 
   const data = useMemo(
     () => accessorFns.data(originalData),
@@ -206,7 +219,7 @@ export default function App() {
       ? areAllValuesActive(a[0])
       : filters && a[0] in filters && filters[a[0]].has(a[1]);
 
-  const [pivotEnabled, setPivotEnabled] = useState(true);
+  const [pivotEnabled] = useState(true);
 
   const rowData = !pivotEnabled
     ? filteredData
@@ -412,7 +425,9 @@ export default function App() {
           </Dropdown.Item>
           {(initialFilters && k in initialFilters ? [...initialFilters[k]] : [])
             .filter((v) =>
-              v.toLowerCase().includes(searchStrings[k].toLowerCase()),
+              `${v}`
+                .toLowerCase()
+                .includes(`${searchStrings[k]}`.toLowerCase()),
             )
             .map((v) => (
               <Dropdown.Item
@@ -441,7 +456,8 @@ export default function App() {
   return (
     <>
       <SubContainer className="d-flex flex-wrap gap-2">
-        {tabSwitcher}
+        {children}
+        {tabs.length > 1 && tabSwitcher}
         <button className="btn btn-success" onClick={onBtnExport} type="button">
           Download CSV export file
         </button>
@@ -463,6 +479,7 @@ export default function App() {
           ></AgGridReact>
         </div>
       </SubContainer>
+      {footnote}
     </>
   );
 }
