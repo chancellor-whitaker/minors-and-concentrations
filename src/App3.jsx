@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { csv } from "d3-fetch";
 
 import updateQueryParam from "./utils/updateQueryParam";
+// import deleteQueryParam from "./utils/deleteQueryParam";
 import MainContainer from "./components/MainContainer";
 import usePrevious from "./hooks/usePrevious";
 import Dropdown from "./components/Dropdown";
@@ -29,14 +30,16 @@ const useFileList = ({
   promise = fileListPromise,
   dateKey = "asOfDate_str",
   termKey = "term_desc",
+  initialTerm,
+  initialDate,
 }) => {
   const fileList = usePromise(promise);
 
   const isLengthyArray = (x) => Array.isArray(x) && x.length > 0;
 
-  const [term, setTerm] = useState();
+  const [term, setTerm] = useState(initialTerm);
 
-  const [date, setDate] = useState();
+  const [date, setDate] = useState(initialDate);
 
   const terms = isLengthyArray(fileList)
     ? [...new Set(fileList.map((x) => x[termKey]))]
@@ -48,7 +51,7 @@ const useFileList = ({
     ),
   ];
 
-  const dates = term ? getDates(term) : [];
+  const dates = term && isLengthyArray(fileList) ? getDates(term) : [];
 
   const handleTermChanged = (t) => {
     if (t !== term) {
@@ -74,7 +77,7 @@ const useFileList = ({
 
   const activeFile = useMemo(
     () =>
-      term && date
+      term && date && isLengthyArray(fileList)
         ? fileList.find((x) => x[termKey] === term && x[dateKey] === date)
         : null,
     [term, date, fileList, termKey, dateKey],
@@ -109,13 +112,21 @@ const initialDate = urlParams.get("date"); // "shoes"
 export default function App() {
   const { setDate, setTerm, dates, terms, data, term, date } = useFileList({
     promise: fileListPromise,
-    initialTerm,
-    initialDate,
+    // initialTerm,
+    // initialDate,
   });
 
-  usePrevious(date, () => updateQueryParam("date", date));
+  const updateParams = () => {
+    updateQueryParam("date", date);
+    updateQueryParam("term", term);
+  };
 
-  usePrevious(term, () => updateQueryParam("term", term));
+  usePrevious(date, updateParams);
+
+  usePrevious(term, updateParams);
+
+  const emptyQueryParams = () =>
+    window.history.replaceState({}, document.title, window.location.pathname);
 
   const termDropdown = (
     <Dropdown
@@ -124,7 +135,15 @@ export default function App() {
       {(api) => (
         <Dropdown.Menu {...api}>
           {terms.map((x) => (
-            <Dropdown.Item onClick={() => setTerm(x)} active={term === x}>
+            <Dropdown.Item
+              onClick={() => {
+                if (term !== x) {
+                  emptyQueryParams();
+                  setTerm(x);
+                }
+              }}
+              active={term === x}
+            >
               {x}
             </Dropdown.Item>
           ))}
@@ -140,7 +159,15 @@ export default function App() {
       {(api) => (
         <Dropdown.Menu {...api}>
           {dates.map((x) => (
-            <Dropdown.Item onClick={() => setDate(x)} active={date === x}>
+            <Dropdown.Item
+              onClick={() => {
+                if (date !== x) {
+                  emptyQueryParams();
+                  setDate(x);
+                }
+              }}
+              active={date === x}
+            >
               {x}
             </Dropdown.Item>
           ))}
