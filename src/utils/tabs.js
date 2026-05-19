@@ -3,8 +3,8 @@ import { csv } from "d3-fetch";
 const fetchJson = (url) => fetch(url).then((res) => res.json());
 
 const autoSizeGrid = ({ api }) => {
-  api.autoSizeAllColumns();
-  // api.sizeColumnsToFit();
+  // api.autoSizeAllColumns();
+  api.sizeColumnsToFit();
 };
 
 const autoSizeProps = {
@@ -58,6 +58,7 @@ const globalHeaderRules = {
   college: "Student College",
   priority_no: "Program No",
   ft_pt: "FT / PT",
+  GRS: "GRS",
 };
 
 const minorHeaderRules = { ...globalHeaderRules, priority: "Minor Priority" };
@@ -98,6 +99,9 @@ const minorDKeyFormatter = (k) =>
 
 const concDKeyFormatter = (k) =>
   k in concHeaderRules ? concHeaderRules[k] : snakeToTitle(k);
+
+const dataKeyFormatter = (k) =>
+  k in globalHeaderRules ? globalHeaderRules[k] : snakeToTitle(k);
 
 const getConcColDefs = (arr) => {
   const fieldDefs = {
@@ -245,8 +249,8 @@ const retentionTab = {
     pivotConfig: returnSelf,
   },
   formatters: {
+    dataKey: dataKeyFormatter,
     dataValue: ([, v]) => v,
-    dataKey: snakeToTitle,
   },
   label: "Retention",
   id: "retention",
