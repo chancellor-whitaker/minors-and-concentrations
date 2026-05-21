@@ -99,6 +99,7 @@ function DropdownButton({
   children = "Dropdown",
   variant = "secondary",
   type = "button",
+  gradient = true,
   as = "button",
   toggle = true,
   className,
@@ -113,6 +114,7 @@ function DropdownButton({
         defaultClassName,
         `btn-${variant}`,
         toggle && "dropdown-toggle",
+        gradient && "bg-gradient",
         active && "active",
         className,
       )}

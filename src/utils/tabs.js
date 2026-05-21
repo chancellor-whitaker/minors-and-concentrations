@@ -16,13 +16,11 @@ const autoSizeProps = {
 
 const dataOrder = ["base", "concentrations", "descriptions", "minors"];
 
-const promises = dataOrder.map((name) => fetchJson(`data/m&c/${name}.json`));
+const promises = dataOrder.map((name) => fetchJson(`data/${name}.json`));
 
 const dataPromise1 = Promise.all(promises);
 
-export const dataPromise2 = csv(
-  "data/retention/202650_12MAY2026_ProgramEnrollments.csv",
-);
+export const dataPromise2 = csv("data/202650_12MAY2026_ProgramEnrollments.csv");
 
 export const dataPromise = dataPromise2;
 
@@ -236,6 +234,7 @@ const retentionTab = {
       column: "term",
       agg: "sum",
     },
+    filters: { GRS: ["Official GRS (Full-time Bachelors Seeking)"] },
   },
   accessorFns: {
     lists: {

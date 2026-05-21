@@ -60402,173 +60402,13 @@ function MainContainer({ defaultClassName = "container", as = "main", className,
 		...rest
 	});
 }
-function SubContainer$1({ defaultClassName = "p-3 bg-body rounded shadow-sm", as = "div", className, ...rest }) {
+function SubContainer$2({ defaultClassName = "p-3 bg-body rounded shadow-sm", as = "div", className, ...rest }) {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(as, {
 		className: [defaultClassName, className].filter(Boolean).join(" "),
 		...rest
 	});
 }
-MainContainer.SubContainer = SubContainer$1;
-//#endregion
-//#region src/utils/tabs.js
-var fetchJson = (url) => fetch(url).then((res) => res.json());
-var autoSizeGrid = ({ api }) => api.autoSizeAllColumns();
-var autoSizeProps = {
-	onGridSizeChanged: autoSizeGrid,
-	onRowDataUpdated: autoSizeGrid,
-	onBodyScrollEnd: autoSizeGrid
-};
-var dataOrder = [
-	"base",
-	"concentrations",
-	"descriptions",
-	"minors"
-];
-var promises = dataOrder.map((name) => fetchJson(`data/${name}.json`));
-var dataPromise = Promise.all(promises);
-var concDataAccessor = (result) => {
-	if (!result) return [];
-	const data = Object.fromEntries(dataOrder.map((name, i) => [name, result[i]]));
-	return data.concentrations.map(({ base_id: bId, conc_id: cId, ...rest }) => ({
-		...data.base[bId],
-		...rest,
-		concentration: data.descriptions[cId]
-	}));
-};
-var minorDataAccessor = (result) => {
-	if (!result) return [];
-	const data = Object.fromEntries(dataOrder.map((name, i) => [name, result[i]]));
-	return data.minors.map(({ minor_id: mId, base_id: bId, ...rest }) => ({
-		...data.base[bId],
-		...rest,
-		minor: data.descriptions[mId]
-	}));
-};
-var globalHeaderRules = {
-	priority_no: "Program No.",
-	ft_pt: "FT / PT"
-};
-var minorHeaderRules = {
-	...globalHeaderRules,
-	priority: "Minor Priority"
-};
-var concHeaderRules = {
-	...globalHeaderRules,
-	priority: "Conc. Priority"
-};
-var globalValueRules = {};
-var allButMinor = (arr) => arr.filter((s) => s !== "minor");
-var allButConc = (arr) => arr.filter((s) => s !== "program" && s !== "concentration");
-var defaultValueFormatter = ({ value }) => value?.toLocaleString();
-var getMinorColDefs = (arr) => {
-	const fieldDefs = { minor: { sort: "asc" } };
-	return arr.map((def) => ({
-		...def,
-		valueFormatter: defaultValueFormatter,
-		...fieldDefs[def.field]
-	}));
-};
-var snakeToTitle = (str) => {
-	return (typeof str === "string" ? str : "").split("_").map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ");
-};
-var minorDKeyFormatter = (k) => k in minorHeaderRules ? minorHeaderRules[k] : snakeToTitle(k);
-var concDKeyFormatter = (k) => k in concHeaderRules ? concHeaderRules[k] : snakeToTitle(k);
-var getConcColDefs = (arr) => {
-	const fieldDefs = {
-		concentration: {
-			sortIndex: 1,
-			sort: "asc"
-		},
-		program: {
-			sortIndex: 0,
-			sort: "asc"
-		}
-	};
-	return arr.map((def) => ({
-		...def,
-		valueFormatter: defaultValueFormatter,
-		...fieldDefs[def.field]
-	}));
-};
-var tabs_default = [{
-	accessorFns: {
-		gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
-			const pivotRows = pivotConfig.rows;
-			return {
-				...params,
-				...autoSizeProps,
-				columnDefs: getMinorColDefs(columnDefs).map((o) => ({
-					...o,
-					type: pivotRows.includes(o.field) ? null : "numericColumn"
-				}))
-			};
-		},
-		lists: {
-			pivotColumn: () => [],
-			pivotRows: () => [],
-			aggType: () => []
-		},
-		pivotConfig: (obj) => ({
-			...obj,
-			rows: ["minor", ...allButMinor(obj.rows)]
-		}),
-		filterLists: (obj) => Object.fromEntries(Object.entries(obj).filter(([k]) => k !== "total")),
-		data: minorDataAccessor
-	},
-	formatters: {
-		dataValue: ([k, v]) => k in globalValueRules && v in globalValueRules[k] ? globalValueRules[k][v] : v,
-		dataKey: minorDKeyFormatter
-	},
-	initialStates: { pivotConfig: {
-		rows: ["minor"],
-		column: "term",
-		value: "total",
-		agg: "sum"
-	} },
-	label: "Minors",
-	id: "minors"
-}, {
-	accessorFns: {
-		gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
-			const pivotRows = pivotConfig.rows;
-			return {
-				...params,
-				...autoSizeProps,
-				columnDefs: getConcColDefs(columnDefs).map((o) => ({
-					...o,
-					type: pivotRows.includes(o.field) ? null : "numericColumn"
-				}))
-			};
-		},
-		pivotConfig: (obj) => ({
-			...obj,
-			rows: [
-				"program",
-				"concentration",
-				...allButConc(obj.rows)
-			]
-		}),
-		lists: {
-			pivotColumn: () => [],
-			pivotRows: () => [],
-			aggType: () => []
-		},
-		filterLists: (obj) => Object.fromEntries(Object.entries(obj).filter(([k]) => k !== "total")),
-		data: concDataAccessor
-	},
-	formatters: {
-		dataValue: ([k, v]) => k in globalValueRules && v in globalValueRules[k] ? globalValueRules[k][v] : v,
-		dataKey: concDKeyFormatter
-	},
-	initialStates: { pivotConfig: {
-		rows: ["program", "concentration"],
-		column: "term",
-		value: "total",
-		agg: "sum"
-	} },
-	label: "Concentrations",
-	id: "concentrations"
-}];
+MainContainer.SubContainer = SubContainer$2;
 //#endregion
 //#region src/hooks/usePrevious.jsx
 function usePrevious(value, fn) {
@@ -60676,9 +60516,9 @@ function DropdownMenu({ defaultClassName = "dropdown-menu d-block overflow-y-scr
 		...rest
 	});
 }
-function DropdownButton({ defaultClassName = "btn", children = "Dropdown", variant = "secondary", type = "button", as = "button", toggle = true, className, active, ...rest }) {
+function DropdownButton({ defaultClassName = "btn", children = "Dropdown", variant = "secondary", type = "button", gradient = true, as = "button", toggle = true, className, active, ...rest }) {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(as, {
-		className: joinClassNames(defaultClassName, `btn-${variant}`, toggle && "dropdown-toggle", active && "active", className),
+		className: joinClassNames(defaultClassName, `btn-${variant}`, toggle && "dropdown-toggle", gradient && "bg-gradient", active && "active", className),
 		type,
 		...rest,
 		children
@@ -60688,63 +60528,6 @@ var joinClassNames = (...classNames) => classNames.filter(Boolean).join(" ");
 Dropdown.Button = DropdownButton;
 Dropdown.Menu = DropdownMenu;
 Dropdown.Item = DropdownItem;
-//#endregion
-//#region src/utils/pivotTable.js
-function pivotTable(data, { agg = "count", column, value, rows }) {
-	const pivot = {};
-	const columnsSet = /* @__PURE__ */ new Set();
-	const rowKeyFn = (item) => rows.map((r) => item[r]).join("||");
-	for (const item of data) {
-		const rKey = rowKeyFn(item);
-		const cKey = item[column];
-		const val = Number(item[value]);
-		columnsSet.add(cKey);
-		if (!pivot[rKey]) pivot[rKey] = { _keys: rows.reduce((acc, r) => {
-			acc[r] = item[r];
-			return acc;
-		}, {}) };
-		if (!pivot[rKey][cKey]) pivot[rKey][cKey] = {
-			max: -Infinity,
-			min: Infinity,
-			count: 0,
-			sum: 0
-		};
-		const cell = pivot[rKey][cKey];
-		if (!isNaN(val)) {
-			cell.sum += val;
-			cell.count += 1;
-			cell.min = Math.min(cell.min, val);
-			cell.max = Math.max(cell.max, val);
-		} else cell.count += 1;
-	}
-	const columns = Array.from(columnsSet);
-	return Object.values(pivot).map((entry) => {
-		const obj = { ...entry._keys };
-		for (const c of columns) {
-			const cell = entry[c];
-			if (!cell) {
-				obj[c] = 0;
-				continue;
-			}
-			switch (agg) {
-				case "sum":
-					obj[c] = cell.sum;
-					break;
-				case "avg":
-					obj[c] = cell.count ? cell.sum / cell.count : 0;
-					break;
-				case "min":
-					obj[c] = cell.min === Infinity ? 0 : cell.min;
-					break;
-				case "max":
-					obj[c] = cell.max === -Infinity ? 0 : cell.max;
-					break;
-				default: obj[c] = cell.count;
-			}
-		}
-		return obj;
-	});
-}
 //#endregion
 //#region src/hooks/usePromise.jsx
 function usePromise(promise) {
@@ -60761,8 +60544,336 @@ function usePromise(promise) {
 	return state;
 }
 //#endregion
+//#region src/utils/pivotTable.js
+function pivotTable(data, { agg = "count", derived = {}, column, value, rows }) {
+	const pivot = {};
+	const columnsSet = /* @__PURE__ */ new Set();
+	const values = Array.isArray(value) ? value : [value];
+	const aggs = Array.isArray(agg) ? agg : [agg];
+	const rowKeyFn = (item) => rows.map((r) => item[r]).join("||");
+	function createStats() {
+		return {
+			max: -Infinity,
+			min: Infinity,
+			count: 0,
+			sum: 0
+		};
+	}
+	function finalizeAgg(stats, aggName) {
+		switch (aggName) {
+			case "sum": return stats.sum;
+			case "avg": return stats.count ? stats.sum / stats.count : 0;
+			case "min": return stats.min === Infinity ? 0 : stats.min;
+			case "max": return stats.max === -Infinity ? 0 : stats.max;
+			default: return stats.count;
+		}
+	}
+	for (const item of data) {
+		const rKey = rowKeyFn(item);
+		const cKey = item[column];
+		columnsSet.add(cKey);
+		if (!pivot[rKey]) pivot[rKey] = { _keys: rows.reduce((acc, r) => {
+			acc[r] = item[r];
+			return acc;
+		}, {}) };
+		if (!pivot[rKey][cKey]) {
+			pivot[rKey][cKey] = {};
+			for (const v of values) pivot[rKey][cKey][v] = createStats();
+		}
+		const cell = pivot[rKey][cKey];
+		for (const v of values) {
+			const val = Number(item[v]);
+			const stats = cell[v];
+			if (!isNaN(val)) {
+				stats.sum += val;
+				stats.count += 1;
+				stats.min = Math.min(stats.min, val);
+				stats.max = Math.max(stats.max, val);
+			} else stats.count += 1;
+		}
+	}
+	const columns = Array.from(columnsSet);
+	return Object.values(pivot).map((entry) => {
+		const obj = { ...entry._keys };
+		for (const c of columns) {
+			const cell = entry[c];
+			if (!cell) {
+				for (const v of values) for (const a of aggs) obj[`${c}→${v}→${a}`] = 0;
+				for (const derivedKey of Object.keys(derived)) obj[`${c}→${derivedKey}`] = 0;
+				continue;
+			}
+			const finalized = {};
+			for (const v of values) {
+				finalized[v] = {};
+				for (const a of aggs) {
+					const result = finalizeAgg(cell[v], a);
+					finalized[v][a] = result;
+					obj[`${c}→${v}→${a}`] = result;
+				}
+			}
+			for (const [derivedKey, fn] of Object.entries(derived)) obj[`${c}→${derivedKey}`] = fn(finalized);
+		}
+		return obj;
+	});
+}
+//#endregion
+//#region src/utils/tabs.js
+var fetchJson = (url) => fetch(url).then((res) => res.json());
+var autoSizeGrid = ({ api }) => {
+	api.sizeColumnsToFit();
+};
+var autoSizeProps = {
+	onGridSizeChanged: autoSizeGrid,
+	onRowDataUpdated: autoSizeGrid,
+	onBodyScrollEnd: autoSizeGrid
+};
+var dataOrder = [
+	"base",
+	"concentrations",
+	"descriptions",
+	"minors"
+];
+var promises = dataOrder.map((name) => fetchJson(`data/${name}.json`));
+var dataPromise1 = Promise.all(promises);
+var dataPromise = d3.csv("data/202650_12MAY2026_ProgramEnrollments.csv");
+var concDataAccessor = (result) => {
+	if (!result) return [];
+	const data = Object.fromEntries(dataOrder.map((name, i) => [name, result[i]]));
+	return data.concentrations.map(({ base_id: bId, conc_id: cId, ...rest }) => ({
+		...data.base[bId],
+		...rest,
+		concentration: data.descriptions[cId]
+	}));
+};
+var minorDataAccessor = (result) => {
+	if (!result) return [];
+	const data = Object.fromEntries(dataOrder.map((name, i) => [name, result[i]]));
+	return data.minors.map(({ minor_id: mId, base_id: bId, ...rest }) => ({
+		...data.base[bId],
+		...rest,
+		minor: data.descriptions[mId]
+	}));
+};
+var globalHeaderRules = {
+	college: "Student College",
+	priority_no: "Program No",
+	ft_pt: "FT / PT",
+	GRS: "GRS"
+};
+var minorHeaderRules = {
+	...globalHeaderRules,
+	priority: "Minor Priority"
+};
+var concHeaderRules = {
+	...globalHeaderRules,
+	priority: "Conc Priority"
+};
+var globalValueRules = {};
+var getAllButMinor = (arr) => arr.filter((s) => s !== "minor");
+var getAllButConc = (arr) => arr.filter((s) => s !== "program" && s !== "concentration");
+var defaultValueFormatter = ({ value }) => value?.toLocaleString();
+var getMinorColDefs = (arr) => {
+	const fieldDefs = { minor: {
+		suppressSizeToFit: true,
+		sort: "asc"
+	} };
+	return arr.map((def) => ({
+		...def,
+		valueFormatter: defaultValueFormatter,
+		...fieldDefs[def.field]
+	}));
+};
+var snakeToTitle = (str) => {
+	return (typeof str === "string" ? str : "").split("_").map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ");
+};
+var minorDKeyFormatter = (k) => k in minorHeaderRules ? minorHeaderRules[k] : snakeToTitle(k);
+var concDKeyFormatter = (k) => k in concHeaderRules ? concHeaderRules[k] : snakeToTitle(k);
+var dataKeyFormatter = (k) => k in globalHeaderRules ? globalHeaderRules[k] : snakeToTitle(k);
+var getConcColDefs = (arr) => {
+	const fieldDefs = {
+		concentration: {
+			suppressSizeToFit: true,
+			sortIndex: 1,
+			sort: "asc"
+		},
+		program: {
+			suppressSizeToFit: true,
+			sortIndex: 0,
+			sort: "asc"
+		}
+	};
+	return arr.map((def) => ({
+		...def,
+		valueFormatter: defaultValueFormatter,
+		...fieldDefs[def.field]
+	}));
+};
+var returnSelf = (x) => x;
+var rArrow = "→";
+var formatter = new Intl.NumberFormat("en-US", {
+	minimumFractionDigits: 2,
+	maximumFractionDigits: 2,
+	style: "percent"
+});
+var formatPercentage = ({ value }) => formatter.format(value);
+var parseArrows = (colDefs) => {
+	const arr = [];
+	const findColGroup = (str) => arr.find(({ headerName }) => headerName === str.split(rArrow)[0]);
+	const addColGroup = (str) => arr.push({
+		headerName: str.split(rArrow)[0],
+		children: []
+	});
+	const findColChild = (str, element) => element.children.find(({ field }) => field === str.split(rArrow)[1]);
+	const addColChild = (str, element) => element.children.push({
+		valueFormatter: str.includes("%") ? formatPercentage : defaultValueFormatter,
+		headerName: snakeToTitle(str.split(rArrow)[1]),
+		type: "numericColumn",
+		field: str
+	});
+	colDefs.filter(({ field }) => field.includes(rArrow)).forEach(({ field }) => {
+		if (!findColGroup(field)) addColGroup(field);
+		const colGroup = findColGroup(field);
+		if (!findColChild(field, colGroup)) addColChild(field, colGroup);
+	});
+	return arr;
+};
+var getFilterLists = (obj, ...arr) => Object.fromEntries(Object.entries(obj).filter(([k]) => ![
+	"residency",
+	"retained",
+	"cohort",
+	"total",
+	"race",
+	"sex",
+	"URM",
+	...arr
+].includes(k)).map((entry) => entry[0] !== "minor" ? entry : [entry[0], new Set([...entry[1]].filter((x) => !["Honors Maroon", "Honors Gold"].includes(x)))]));
+var dataValueFormatter = ([k, v]) => k in globalValueRules && v in globalValueRules[k] ? globalValueRules[k][v] : v;
+var check = (rows, def) => rows.includes(def.field) ? {
+	sortIndex: rows.indexOf(def.field),
+	suppressSizeToFit: true,
+	sort: "asc"
+} : {};
+var getGridProps = ({ columnDefs, ...params }, { pivotConfig: { rows } }) => {
+	return {
+		columnDefs: [...columnDefs.filter(({ field }) => !field.includes(rArrow)), ...parseArrows(columnDefs)].map((def) => ({
+			...def,
+			...check(rows, def)
+		})),
+		...params,
+		...autoSizeProps
+	};
+};
+var tabs_default = dataPromise === dataPromise1 ? [{
+	accessorFns: {
+		gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
+			const pivotRows = pivotConfig.rows;
+			const getHeaderName = (f) => f.includes(rArrow) ? { headerName: f.split(rArrow)[0] } : {};
+			return {
+				...params,
+				...autoSizeProps,
+				columnDefs: getMinorColDefs(columnDefs).map((o) => ({
+					...o,
+					...getHeaderName(o.field),
+					type: pivotRows.includes(o.field) ? null : "numericColumn"
+				}))
+			};
+		},
+		pivotConfig: (obj) => ({
+			...obj,
+			rows: ["minor", ...getAllButMinor(obj.rows)]
+		}),
+		lists: {
+			pivotColumn: () => [],
+			pivotRows: () => [],
+			aggType: () => []
+		},
+		filterLists: getFilterLists,
+		data: minorDataAccessor
+	},
+	initialStates: { pivotConfig: {
+		rows: ["minor"],
+		column: "term",
+		value: "total",
+		agg: "sum"
+	} },
+	formatters: {
+		dataValue: dataValueFormatter,
+		dataKey: minorDKeyFormatter
+	},
+	label: "Minors",
+	id: "minors"
+}, {
+	accessorFns: {
+		gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
+			const pivotRows = pivotConfig.rows;
+			const getHeaderName = (f) => f.includes(rArrow) ? { headerName: f.split(rArrow)[0] } : {};
+			return {
+				...params,
+				...autoSizeProps,
+				columnDefs: getConcColDefs(columnDefs).map((o) => ({
+					...o,
+					...getHeaderName(o.field),
+					type: pivotRows.includes(o.field) ? null : "numericColumn"
+				}))
+			};
+		},
+		pivotConfig: (obj) => ({
+			...obj,
+			rows: [
+				"program",
+				"concentration",
+				...getAllButConc(obj.rows)
+			]
+		}),
+		lists: {
+			pivotColumn: () => [],
+			pivotRows: () => [],
+			aggType: () => []
+		},
+		filterLists: getFilterLists,
+		data: concDataAccessor
+	},
+	initialStates: { pivotConfig: {
+		rows: ["program", "concentration"],
+		column: "term",
+		value: "total",
+		agg: "sum"
+	} },
+	formatters: {
+		dataValue: dataValueFormatter,
+		dataKey: concDKeyFormatter
+	},
+	label: "Concentrations",
+	id: "concentrations"
+}] : [{
+	initialStates: { pivotConfig: {
+		derived: { "%": (cell) => cell.cohort.sum ? cell.retained.sum / cell.cohort.sum : 0 },
+		value: ["cohort", "retained"],
+		rows: ["Program"],
+		column: "term",
+		agg: "sum"
+	} },
+	accessorFns: {
+		lists: {
+			pivotColumn: () => [],
+			pivotRows: returnSelf,
+			aggType: () => []
+		},
+		filterLists: (obj) => getFilterLists(obj, "term"),
+		data: (x) => !x ? [] : x,
+		gridProps: getGridProps,
+		pivotConfig: returnSelf
+	},
+	formatters: {
+		dataKey: dataKeyFormatter,
+		dataValue: ([, v]) => v
+	},
+	label: "Retention",
+	id: "retention"
+}];
+//#endregion
 //#region src/App2.jsx
-var { SubContainer } = MainContainer;
+var { SubContainer: SubContainer$1 } = MainContainer;
 var getEveryValue = (data) => {
 	const store = {};
 	[data].filter(Boolean).flat().forEach((row) => Object.entries(row).forEach(([key, value]) => {
@@ -60771,8 +60882,9 @@ var getEveryValue = (data) => {
 	}));
 	return Object.fromEntries(Object.entries(store).map(([k, set]) => [k, new Set([...set].sort())]));
 };
-function App() {
+function App$1({ data: originalData, footnote, children }) {
 	const [filters, setFilters] = (0, import_react.useState)();
+	const [searchStrings, setSearchStrings] = (0, import_react.useState)();
 	const [tabId, setTabId] = (0, import_react.useState)(tabs_default[0].id);
 	const { initialStates, accessorFns, formatters } = (0, import_react.useMemo)(() => tabs_default.find((obj) => obj.id === tabId), [tabId]);
 	const [pivotConfigState, setPivotConfig] = (0, import_react.useState)(initialStates.pivotConfig);
@@ -60780,10 +60892,14 @@ function App() {
 	const initPivotState = () => setPivotConfig(initialStates.pivotConfig);
 	usePrevious(initialStates, initPivotState);
 	const { column: pivotColumn, rows: pivotRows, agg: aggType } = pivotConfig;
-	const originalData = usePromise(dataPromise);
 	const data = (0, import_react.useMemo)(() => accessorFns.data(originalData), [accessorFns, originalData]);
 	const initialFilters = (0, import_react.useMemo)(() => accessorFns.filterLists(getEveryValue(data)), [accessorFns, data]);
-	usePrevious(initialFilters, () => setFilters(initialFilters));
+	const initFilters = () => {
+		setFilters(initialFilters);
+		setSearchStrings(Object.fromEntries(Object.entries(initialFilters).map(([k]) => [k, ""])));
+	};
+	const onSearchChange = ({ target }) => setSearchStrings((state) => Object.fromEntries(Object.entries(state).map((entry) => entry[0] === target.name ? [target.name, target.value] : entry)));
+	usePrevious(initialFilters, initFilters);
 	const filteredData = (0, import_react.useMemo)(() => data.filter((row) => {
 		for (const [k, v] of Object.entries(row)) if (filters && k in filters && !filters[k].has(v)) return false;
 		return true;
@@ -60791,9 +60907,10 @@ function App() {
 	const updateFilters = (a) => setFilters((state) => Object.fromEntries(Object.entries(state).map((entry) => entry[0] !== a[0] ? entry : [a[0], a.length === 1 ? entry[1].size === initialFilters[a[0]].size ? /* @__PURE__ */ new Set() : new Set(initialFilters[a[0]]) : entry[1].has(a[1]) ? new Set([...entry[1]].filter((s) => s !== a[1])) : new Set([...entry[1], a[1]])])));
 	const areAllValuesActive = (k) => filters && k in filters && filters[k].size === initialFilters[k].size;
 	const isValueActive = (a) => a.length === 1 ? areAllValuesActive(a[0]) : filters && a[0] in filters && filters[a[0]].has(a[1]);
-	const rowData = pivotTable(filteredData, pivotConfig);
+	const [pivotEnabled] = (0, import_react.useState)(true);
+	const rowData = !pivotEnabled ? filteredData : pivotTable(filteredData, pivotConfig);
 	const originalGridProps = {
-		pinnedTopRowData: pivotTable(filteredData, {
+		pinnedTopRowData: !pivotEnabled ? [] : pivotTable(filteredData, {
 			...pivotConfig,
 			rows: []
 		}),
@@ -60878,7 +60995,7 @@ function App() {
 		className: "btn-group",
 		role: "group",
 		children: tabs_default.map((obj) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-			className: ["btn btn-primary", obj.id === tabId && "active"].filter(Boolean).join(" "),
+			className: ["btn btn-primary bg-gradient", obj.id === tabId && "active"].filter(Boolean).join(" "),
 			onClick: () => setTabId(obj.id),
 			type: "button",
 			children: obj.label
@@ -60887,23 +61004,39 @@ function App() {
 	const filterableFields = Object.keys(initialFilters);
 	const renderDropdownFilter = (k) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown, {
 		renderButton: (api) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown.Button, {
-			variant: areAllValuesActive(k) ? "secondary" : "warning",
+			variant: isValueActive([k]) ? "secondary" : "warning",
 			className: "w-100",
 			...api,
 			children: formatters.dataKey(k)
 		}),
 		className: "flex-fill",
 		children: (api) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(Dropdown.Menu, {
+			className: "pt-0",
 			...api,
-			children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown.Item, {
-				onClick: () => updateFilters([k]),
-				active: isValueActive([k]),
-				children: "All"
-			}), (initialFilters && k in initialFilters ? [...initialFilters[k]] : []).map((v) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown.Item, {
-				onClick: () => updateFilters([k, v]),
-				active: isValueActive([k, v]),
-				children: formatters.dataValue([k, v])
-			}, v))]
+			children: [
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("form", {
+					className: "p-2 mb-2 bg-body-tertiary border-bottom",
+					children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", {
+						placeholder: "Type to filter...",
+						onChange: onSearchChange,
+						value: searchStrings[k],
+						className: "form-control",
+						autoComplete: "false",
+						type: "search",
+						name: k
+					})
+				}),
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown.Item, {
+					onClick: () => updateFilters([k]),
+					active: isValueActive([k]),
+					children: "All"
+				}),
+				(initialFilters && k in initialFilters ? [...initialFilters[k]] : []).filter((v) => `${v}`.toLowerCase().includes(`${searchStrings[k]}`.toLowerCase())).map((v) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown.Item, {
+					onClick: () => updateFilters([k, v]),
+					active: isValueActive([k, v]),
+					children: formatters.dataValue([k, v])
+				}, v))
+			]
 		})
 	}, k);
 	const menuItems = [
@@ -60914,39 +61047,131 @@ function App() {
 	const gridRef = (0, import_react.useRef)();
 	const onBtnExport = () => gridRef.current.api.exportDataAsCsv();
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-		/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SubContainer, {
+		/* @__PURE__ */ (0, import_jsx_runtime.jsxs)(SubContainer$1, {
 			className: "d-flex flex-wrap gap-2",
-			children: [tabSwitcher, /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-				className: "btn btn-success",
-				onClick: onBtnExport,
-				type: "button",
-				children: "Download CSV export file"
-			})]
+			children: [
+				children,
+				tabs_default.length > 1 && tabSwitcher,
+				/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+					className: "btn btn-success bg-gradient",
+					onClick: onBtnExport,
+					type: "button",
+					children: "Download CSV export file"
+				})
+			]
 		}),
-		menuItems.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SubContainer, {
+		menuItems.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SubContainer$1, {
 			className: "d-flex flex-wrap gap-2",
 			children: menuItems
 		}),
-		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SubContainer, {
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SubContainer$1, {
 			className: "d-flex flex-wrap gap-2",
 			children: filterableFields.map(renderDropdownFilter)
 		}),
-		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SubContainer, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+		/* @__PURE__ */ (0, import_jsx_runtime.jsx)(SubContainer$1, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 			style: { height: 500 },
 			children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AgGridReact, {
 				theme: themeBalham,
 				ref: gridRef,
 				...gridProps
 			})
-		}) })
+		}) }),
+		footnote
 	] });
+}
+//#endregion
+//#region src/App3.jsx
+var { SubContainer } = MainContainer;
+var fileListPromise = d3.csv("data/_fileList.csv");
+var createDataPromiseFn = (file) => {
+	const arr = file.filename.split("\\");
+	return d3.csv(`data/${arr[arr.length - 1]}`);
+};
+var useFileList = ({ findDefaultPage = (x) => x.default_page === "Y", createDataPromise = createDataPromiseFn, promise = fileListPromise, dateKey = "asOfDate_str", termKey = "term_desc", initialTerm, initialDate }) => {
+	const fileList = usePromise(promise);
+	const isLengthyArray = (x) => Array.isArray(x) && x.length > 0;
+	const [term, setTerm] = (0, import_react.useState)(initialTerm);
+	const [date, setDate] = (0, import_react.useState)(initialDate);
+	const terms = isLengthyArray(fileList) ? [...new Set(fileList.map((x) => x[termKey]))] : [];
+	const getDates = (term) => [...new Set(fileList.filter((x) => x[termKey] === term).map((x) => x[dateKey]))];
+	const dates = term && isLengthyArray(fileList) ? getDates(term) : [];
+	const handleTermChanged = (t) => {
+		if (t !== term) {
+			setTerm(t);
+			const newDates = getDates(t);
+			if (!newDates.includes(date)) setDate(newDates[0]);
+		}
+	};
+	if (isLengthyArray(fileList) && !term && !date) {
+		const defaultFile = fileList.find(findDefaultPage);
+		const file = defaultFile ? defaultFile : fileList[0];
+		setTerm(file[termKey]);
+		setDate(file[dateKey]);
+	}
+	const activeFile = (0, import_react.useMemo)(() => term && date && isLengthyArray(fileList) ? fileList.find((x) => x[termKey] === term && x[dateKey] === date) : null, [
+		term,
+		date,
+		fileList,
+		termKey,
+		dateKey
+	]);
+	return {
+		setTerm: handleTermChanged,
+		activeFile,
+		setDate,
+		terms,
+		dates,
+		data: usePromise((0, import_react.useMemo)(() => activeFile ? createDataPromise(activeFile) : null, [activeFile, createDataPromise])),
+		term,
+		date
+	};
+};
+var urlParams = new URLSearchParams(window.location.search);
+urlParams.get("term");
+urlParams.get("date");
+function App() {
+	const { setDate, setTerm, dates, terms, data, term, date } = useFileList({});
+	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(App$1, {
+		data,
+		children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown, {
+			renderButton: (api) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown.Button, {
+				...api,
+				children: term
+			}),
+			children: (api) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown.Menu, {
+				...api,
+				children: terms.map((x) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown.Item, {
+					onClick: () => {
+						if (term !== x) setTerm(x);
+					},
+					active: term === x,
+					children: x
+				}))
+			})
+		}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown, {
+			renderButton: (api) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown.Button, {
+				...api,
+				children: date
+			}),
+			children: (api) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown.Menu, {
+				...api,
+				children: dates.map((x) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Dropdown.Item, {
+					onClick: () => {
+						if (date !== x) setDate(x);
+					},
+					active: date === x,
+					children: x
+				}))
+			})
+		})]
+	}) });
 }
 //#endregion
 //#region src/main.jsx
 var modules = [AllCommunityModule];
 (0, import_client.createRoot)(document.getElementById("root")).render(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_react.StrictMode, { children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RemoteComponent, {
 	url: "https://irserver2.eku.edu/libraries/remote/r19-wrapper.cjs",
-	heading: "Minors & Concentrations",
+	heading: "Retention Dashboard",
 	children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AgGridProvider, {
 		modules,
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(App, {})

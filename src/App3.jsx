@@ -1,27 +1,26 @@
 import { useState, useMemo } from "react";
 import { csv } from "d3-fetch";
 
-import updateQueryParam from "./utils/updateQueryParam";
-// import deleteQueryParam from "./utils/deleteQueryParam";
+// import updateQueryParam from "./utils/updateQueryParam";
 import MainContainer from "./components/MainContainer";
-import usePrevious from "./hooks/usePrevious";
+// import usePrevious from "./hooks/usePrevious";
 import Dropdown from "./components/Dropdown";
 import usePromise from "./hooks/usePromise";
 // import { dataPromise } from "./utils/tabs";
 import App2 from "./App2";
 const { SubContainer } = MainContainer;
 
-const fileListPromise = csv("data/retention/_fileList.csv");
+const fileListPromise = csv("data/_fileList.csv");
 
 const createDataPromiseFn = (file) => {
   const arr = file.filename.split("\\");
 
-  return csv(`data/retention/${arr[arr.length - 1]}`);
+  return csv(`data/${arr[arr.length - 1]}`);
 };
 
 // *2 dropdowns for file list
 // !set grs to official grs (ft bach seeking) by default
-// !footnote on minors (not retention)
+// *footnote on minors (not retention)
 // !try query param thing (per term & date)
 
 const useFileList = ({
@@ -103,30 +102,29 @@ const useFileList = ({
 };
 
 // Example URL: https://example.com
-const urlParams = new URLSearchParams(window.location.search);
+// const urlParams = new URLSearchParams(window.location.search);
 
 // Get a specific value
-const initialTerm = urlParams.get("term"); // "123"
-const initialDate = urlParams.get("date"); // "shoes"
+// const initialTerm = urlParams.get("term"); // "123"
+// const initialDate = urlParams.get("date"); // "shoes"
+
+// const emptyQueryParams = () =>
+//   window.history.replaceState({}, document.title, window.location.pathname);
+
+// ! right align col group headers
+// ! query param stuff
 
 export default function App() {
-  const { setDate, setTerm, dates, terms, data, term, date } = useFileList({
-    promise: fileListPromise,
-    // initialTerm,
-    // initialDate,
-  });
+  const { setDate, setTerm, dates, terms, data, term, date } = useFileList({});
 
-  const updateParams = () => {
-    updateQueryParam("date", date);
-    updateQueryParam("term", term);
-  };
+  //   const updateParams = () => {
+  //     updateQueryParam("date", date);
+  //     updateQueryParam("term", term);
+  //   };
 
-  usePrevious(date, updateParams);
+  ////   usePrevious(date, updateParams);
 
-  usePrevious(term, updateParams);
-
-  const emptyQueryParams = () =>
-    window.history.replaceState({}, document.title, window.location.pathname);
+  ////   usePrevious(term, updateParams);
 
   const termDropdown = (
     <Dropdown
@@ -138,7 +136,7 @@ export default function App() {
             <Dropdown.Item
               onClick={() => {
                 if (term !== x) {
-                  emptyQueryParams();
+                  //   emptyQueryParams();
                   setTerm(x);
                 }
               }}
@@ -162,7 +160,7 @@ export default function App() {
             <Dropdown.Item
               onClick={() => {
                 if (date !== x) {
-                  emptyQueryParams();
+                  //   emptyQueryParams();
                   setDate(x);
                 }
               }}
@@ -176,10 +174,12 @@ export default function App() {
     </Dropdown>
   );
 
+  // const data = usePromise(dataPromise);
+
   return (
     <>
       <App2
-        footnote={<i>* This is based on official enrollment numbers.</i>}
+        // footnote={<i>* This is based on official enrollment numbers.</i>}
         data={data}
       >
         {termDropdown}

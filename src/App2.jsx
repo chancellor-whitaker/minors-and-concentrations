@@ -1,11 +1,13 @@
 import { useState, useMemo, useRef } from "react";
 import { themeBalham } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
+// import { search } from "fast-fuzzy";
 
 import MainContainer from "./components/MainContainer";
 import usePrevious from "./hooks/usePrevious";
 import Dropdown from "./components/Dropdown";
 import pivotTable from "./utils/pivotTable";
+// import minors from "./utils/minors";
 import tabs from "./utils/tabs";
 
 const { SubContainer } = MainContainer;
@@ -107,20 +109,25 @@ const getEveryValue = (data) => {
 // ?responsive auto-sizing (based on dynamic width)
 // !filter state should be like faculty workload filter state
 // !should be able to set initial filters
-// !footnote that this is based on official enrollment numbers
+// *footnote that this is based on official enrollment numbers
 
 // retention
-// !file list
+// *file list
 // ?query params (route per file)
 
 // minors & conc
 // ?minor college dropdown
 
 // both
-// !performance
-// !styling
+// ?performance
+// *styling
 // ?file organization
 // ?utilize better filter state version
+
+// const searchMinors = (s) => [
+//   s,
+//   search(s, minors, { keySelector: (obj) => obj.minor, returnMatchData: true }),
+// ];
 
 export default function App({ data: originalData, footnote, children }) {
   const [filters, setFilters] = useState();
@@ -153,18 +160,42 @@ export default function App({ data: originalData, footnote, children }) {
     [accessorFns, originalData],
   );
 
-  const initialFilters = useMemo(
+  // const fuzzyMinors = useMemo(() => {
+  //   const arr = [...new Set(data.map(({ minor }) => minor))];
+
+  //   return arr.map(searchMinors);
+  // }, [data]);
+
+  // console.log("fuzzy minors", fuzzyMinors);
+
+  const filterLists = useMemo(
     () => accessorFns.filterLists(getEveryValue(data)),
     [accessorFns, data],
   );
+
+  const initialFilters = useMemo(() => {
+    if (!("filters" in initialStates)) return filterLists;
+
+    return Object.fromEntries(
+      Object.entries(filterLists).map((entry) => {
+        const [k, set] = entry;
+
+        if (!(k in initialStates.filters)) return entry;
+
+        return [k, new Set(initialStates.filters[k].filter((v) => set.has(v)))];
+      }),
+    );
+  }, [filterLists, initialStates]);
 
   const initFilters = () => {
     setFilters(initialFilters);
 
     setSearchStrings(
-      Object.fromEntries(Object.entries(initialFilters).map(([k]) => [k, ""])),
+      Object.fromEntries(Object.entries(filterLists).map(([k]) => [k, ""])),
     );
   };
+
+  usePrevious(filterLists, initFilters);
 
   const onSearchChange = ({ target }) =>
     setSearchStrings((state) =>
@@ -174,8 +205,6 @@ export default function App({ data: originalData, footnote, children }) {
         ),
       ),
     );
-
-  usePrevious(initialFilters, initFilters);
 
   const filteredData = useMemo(
     () =>
@@ -200,9 +229,9 @@ export default function App({ data: originalData, footnote, children }) {
             : [
                 a[0],
                 a.length === 1
-                  ? entry[1].size === initialFilters[a[0]].size
+                  ? entry[1].size === filterLists[a[0]].size
                     ? new Set()
-                    : new Set(initialFilters[a[0]])
+                    : new Set(filterLists[a[0]])
                   : entry[1].has(a[1])
                     ? new Set([...entry[1]].filter((s) => s !== a[1]))
                     : new Set([...entry[1], a[1]]),
@@ -212,7 +241,7 @@ export default function App({ data: originalData, footnote, children }) {
     );
 
   const areAllValuesActive = (k) =>
-    filters && k in filters && filters[k].size === initialFilters[k].size;
+    filters && k in filters && filters[k].size === filterLists[k].size;
 
   const isValueActive = (a) =>
     a.length === 1
@@ -371,7 +400,10 @@ export default function App({ data: originalData, footnote, children }) {
       <div className="btn-group" role="group">
         {tabs.map((obj) => (
           <button
-            className={["btn btn-primary", obj.id === tabId && "active"]
+            className={[
+              "btn btn-primary bg-gradient",
+              obj.id === tabId && "active",
+            ]
               .filter(Boolean)
               .join(" ")}
             onClick={() => setTabId(obj.id)}
@@ -385,7 +417,7 @@ export default function App({ data: originalData, footnote, children }) {
     </div>
   );
 
-  const filterableFields = Object.keys(initialFilters);
+  const filterableFields = Object.keys(filterLists);
 
   // isValueActive, areAllValuesActive, valuesPerKey, updateDropdowns
 
@@ -404,7 +436,7 @@ export default function App({ data: originalData, footnote, children }) {
       key={k}
     >
       {(api) => (
-        <Dropdown.Menu {...api}>
+        <Dropdown.Menu className="pt-0" {...api}>
           <form className="p-2 mb-2 bg-body-tertiary border-bottom">
             <input
               placeholder="Type to filter..."
@@ -423,7 +455,7 @@ export default function App({ data: originalData, footnote, children }) {
           >
             All
           </Dropdown.Item>
-          {(initialFilters && k in initialFilters ? [...initialFilters[k]] : [])
+          {(filterLists && k in filterLists ? [...filterLists[k]] : [])
             .filter((v) =>
               `${v}`
                 .toLowerCase()
@@ -458,7 +490,11 @@ export default function App({ data: originalData, footnote, children }) {
       <SubContainer className="d-flex flex-wrap gap-2">
         {children}
         {tabs.length > 1 && tabSwitcher}
-        <button className="btn btn-success" onClick={onBtnExport} type="button">
+        <button
+          className="btn btn-success bg-gradient"
+          onClick={onBtnExport}
+          type="button"
+        >
           Download CSV export file
         </button>
       </SubContainer>
