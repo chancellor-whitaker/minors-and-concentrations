@@ -6,7 +6,7 @@ import MainContainer from "./components/MainContainer";
 // import usePrevious from "./hooks/usePrevious";
 import Dropdown from "./components/Dropdown";
 import usePromise from "./hooks/usePromise";
-// import { dataPromise } from "./utils/tabs";
+import { dataPromise } from "./utils/tabs";
 import App2 from "./App2";
 const { SubContainer } = MainContainer;
 
@@ -19,7 +19,7 @@ const createDataPromiseFn = (file) => {
 };
 
 // *2 dropdowns for file list
-// !set grs to official grs (ft bach seeking) by default
+// *set grs to official grs (ft bach seeking) by default
 // *footnote on minors (not retention)
 // !try query param thing (per term & date)
 
@@ -101,89 +101,99 @@ const useFileList = ({
   };
 };
 
-// Example URL: https://example.com
-// const urlParams = new URLSearchParams(window.location.search);
-
-// Get a specific value
-// const initialTerm = urlParams.get("term"); // "123"
-// const initialDate = urlParams.get("date"); // "shoes"
-
 // const emptyQueryParams = () =>
 //   window.history.replaceState({}, document.title, window.location.pathname);
 
-// ! right align col group headers
+// * right align col group headers
 // ! query param stuff
 
+// const urlParams = new URLSearchParams(window.location.search);
+
+// const initialTerm = urlParams.get("term");
+
+// const initialDate = urlParams.get("date");
+
+// console.log(initialTerm, initialDate);
+
+// emptyQueryParams();
+
 export default function App() {
-  const { setDate, setTerm, dates, terms, data, term, date } = useFileList({});
+  // if (urlParams) emptyQueryParams();
+  // const prevUrlParams = usePrevious(urlParams);
 
-  //   const updateParams = () => {
-  //     updateQueryParam("date", date);
-  //     updateQueryParam("term", term);
-  //   };
+  // const initialTerm = prevUrlParams ? prevUrlParams.get("term") : null;
 
-  ////   usePrevious(date, updateParams);
+  // const initialDate = prevUrlParams ? prevUrlParams.get("date") : null;
 
-  ////   usePrevious(term, updateParams);
+  // console.log(prevUrlParams);
 
-  const termDropdown = (
-    <Dropdown
-      renderButton={(api) => <Dropdown.Button {...api}>{term}</Dropdown.Button>}
-    >
-      {(api) => (
-        <Dropdown.Menu {...api}>
-          {terms.map((x) => (
-            <Dropdown.Item
-              onClick={() => {
-                if (term !== x) {
-                  //   emptyQueryParams();
-                  setTerm(x);
-                }
-              }}
-              active={term === x}
-            >
-              {x}
-            </Dropdown.Item>
-          ))}
-        </Dropdown.Menu>
-      )}
-    </Dropdown>
-  );
+  // const { setDate, setTerm, dates, terms, data, term, date } = useFileList({});
 
-  const dateDropdown = (
-    <Dropdown
-      renderButton={(api) => <Dropdown.Button {...api}>{date}</Dropdown.Button>}
-    >
-      {(api) => (
-        <Dropdown.Menu {...api}>
-          {dates.map((x) => (
-            <Dropdown.Item
-              onClick={() => {
-                if (date !== x) {
-                  //   emptyQueryParams();
-                  setDate(x);
-                }
-              }}
-              active={date === x}
-            >
-              {x}
-            </Dropdown.Item>
-          ))}
-        </Dropdown.Menu>
-      )}
-    </Dropdown>
-  );
+  // const updateParams = () => {
+  //   updateQueryParam("date", date);
+  //   updateQueryParam("term", term);
+  // };
 
-  // const data = usePromise(dataPromise);
+  // usePrevious(date, updateParams);
+
+  // usePrevious(term, updateParams);
+
+  // const termDropdown = (
+  //   <Dropdown
+  //     renderButton={(api) => <Dropdown.Button {...api}>{term}</Dropdown.Button>}
+  //   >
+  //     {(api) => (
+  //       <Dropdown.Menu {...api}>
+  //         {terms.map((x) => (
+  //           <Dropdown.Item
+  //             onClick={() => {
+  //               if (term !== x) {
+  //                 setTerm(x);
+  //               }
+  //             }}
+  //             active={term === x}
+  //           >
+  //             {x}
+  //           </Dropdown.Item>
+  //         ))}
+  //       </Dropdown.Menu>
+  //     )}
+  //   </Dropdown>
+  // );
+
+  // const dateDropdown = (
+  //   <Dropdown
+  //     renderButton={(api) => <Dropdown.Button {...api}>{date}</Dropdown.Button>}
+  //   >
+  //     {(api) => (
+  //       <Dropdown.Menu {...api}>
+  //         {dates.map((x) => (
+  //           <Dropdown.Item
+  //             onClick={() => {
+  //               if (date !== x) {
+  //                 setDate(x);
+  //               }
+  //             }}
+  //             active={date === x}
+  //           >
+  //             {x}
+  //           </Dropdown.Item>
+  //         ))}
+  //       </Dropdown.Menu>
+  //     )}
+  //   </Dropdown>
+  // );
+
+  const data = usePromise(dataPromise);
 
   return (
     <>
       <App2
-        // footnote={<i>* This is based on official enrollment numbers.</i>}
+        footnote={<i>* This is based on official enrollment numbers.</i>}
         data={data}
       >
-        {termDropdown}
-        {dateDropdown}
+        {/* {termDropdown} */}
+        {/* {dateDropdown} */}
       </App2>
     </>
   );

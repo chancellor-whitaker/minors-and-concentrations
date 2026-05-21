@@ -19,3 +19,7 @@ button.btn:not(.btn-ghost) {
   align-items: center;
   justify-content: center;
 }
+
+.ag-header-group-cell-label {
+  justify-content: center;
+}

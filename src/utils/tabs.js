@@ -2,16 +2,25 @@ import { csv } from "d3-fetch";
 
 const fetchJson = (url) => fetch(url).then((res) => res.json());
 
-const autoSizeGrid = ({ api }) => {
-  // api.autoSizeAllColumns();
-  api.sizeColumnsToFit();
+const autoSizeGrid = (e) => {
+  // const allDisplayedCols = e.api.getAllDisplayedColumns();
+
+  // if (e.type === "gridSizeChanged") {
+  //   if (e.clientWidth / allDisplayedCols.length < 100) {
+  //     e.api.autoSizeAllColumns();
+  //   } else {
+  //     e.api.sizeColumnsToFit();
+  //   }
+  // }
+
+  e.api.autoSizeAllColumns();
 };
 
 const autoSizeProps = {
-  // autoSizeStrategy: { type: "fitCellContents" },
+  autoSizeStrategy: { type: "fitCellContents" },
   onGridSizeChanged: autoSizeGrid,
   onRowDataUpdated: autoSizeGrid,
-  onBodyScrollEnd: autoSizeGrid,
+  // onBodyScrollEnd: autoSizeGrid,
 };
 
 const dataOrder = ["base", "concentrations", "descriptions", "minors"];
@@ -22,7 +31,7 @@ const dataPromise1 = Promise.all(promises);
 
 export const dataPromise2 = csv("data/202650_12MAY2026_ProgramEnrollments.csv");
 
-export const dataPromise = dataPromise2;
+export const dataPromise = dataPromise1;
 
 const concDataAccessor = (result) => {
   if (!result) return [];
@@ -216,6 +225,7 @@ const getGridProps = ({ columnDefs, ...params }, { pivotConfig: { rows } }) => {
       ...def,
       ...check(rows, def),
     })),
+    defaultColDef: { suppressMovable: true, lockVisible: true },
     // columnDefs,
     ...params,
     ...autoSizeProps,
@@ -271,6 +281,7 @@ const minorTab = {
           ...getHeaderName(o.field),
           type: pivotRows.includes(o.field) ? null : "numericColumn",
         })),
+        defaultColDef: { suppressMovable: true, lockVisible: true },
       };
     },
     pivotConfig: (obj) => ({
@@ -314,6 +325,7 @@ const concTab = {
           ...getHeaderName(o.field),
           type: pivotRows.includes(o.field) ? null : "numericColumn",
         })),
+        defaultColDef: { suppressMovable: true, lockVisible: true },
       };
     },
     pivotConfig: (obj) => ({
