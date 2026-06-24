@@ -60573,6 +60573,7 @@ var minorDataAccessor = (result) => {
 	}));
 };
 var globalHeaderRules = {
+	department: "Student Department",
 	college: "Student College",
 	priority_no: "Program No",
 	ft_pt: "FT / PT",
@@ -60690,18 +60691,20 @@ var tabs_default = dataPromise === dataPromise1 ? [{
 		gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
 			const pivotRows = pivotConfig.rows;
 			const getHeaderName = (f) => f.includes(rArrow) ? { headerName: f.split(rArrow)[0] } : {};
+			const colDefs = getMinorColDefs(columnDefs).map((o) => ({
+				...o,
+				...getHeaderName(o.field),
+				type: pivotRows.includes(o.field) ? null : "numericColumn"
+			}));
+			const colDefs2 = [...colDefs.filter(({ type }) => type === null), ...colDefs.filter(({ type }) => type === "numericColumn").slice(-3)];
 			return {
 				...params,
 				...autoSizeProps,
-				columnDefs: getMinorColDefs(columnDefs).map((o) => ({
-					...o,
-					...getHeaderName(o.field),
-					type: pivotRows.includes(o.field) ? null : "numericColumn"
-				})),
 				defaultColDef: {
 					suppressMovable: true,
 					lockVisible: true
-				}
+				},
+				columnDefs: colDefs2
 			};
 		},
 		pivotConfig: (obj) => ({
@@ -60733,18 +60736,20 @@ var tabs_default = dataPromise === dataPromise1 ? [{
 		gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
 			const pivotRows = pivotConfig.rows;
 			const getHeaderName = (f) => f.includes(rArrow) ? { headerName: f.split(rArrow)[0] } : {};
+			const colDefs = getConcColDefs(columnDefs).map((o) => ({
+				...o,
+				...getHeaderName(o.field),
+				type: pivotRows.includes(o.field) ? null : "numericColumn"
+			}));
+			const colDefs2 = [...colDefs.filter(({ type }) => type === null), ...colDefs.filter(({ type }) => type === "numericColumn").slice(-3)];
 			return {
 				...params,
 				...autoSizeProps,
-				columnDefs: getConcColDefs(columnDefs).map((o) => ({
-					...o,
-					...getHeaderName(o.field),
-					type: pivotRows.includes(o.field) ? null : "numericColumn"
-				})),
 				defaultColDef: {
 					suppressMovable: true,
 					lockVisible: true
-				}
+				},
+				columnDefs: colDefs2
 			};
 		},
 		pivotConfig: (obj) => ({

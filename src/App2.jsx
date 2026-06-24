@@ -124,11 +124,6 @@ const getEveryValue = (data) => {
 // ?file organization
 // ?utilize better filter state version
 
-// const searchMinors = (s) => [
-//   s,
-//   search(s, minors, { keySelector: (obj) => obj.minor, returnMatchData: true }),
-// ];
-
 export default function App({ data: originalData, footnote, children }) {
   const [filters, setFilters] = useState();
 
@@ -153,20 +148,10 @@ export default function App({ data: originalData, footnote, children }) {
 
   const { column: pivotColumn, rows: pivotRows, agg: aggType } = pivotConfig;
 
-  // const originalData = usePromise(dataPromise);
-
   const data = useMemo(
     () => accessorFns.data(originalData),
     [accessorFns, originalData],
   );
-
-  // const fuzzyMinors = useMemo(() => {
-  //   const arr = [...new Set(data.map(({ minor }) => minor))];
-
-  //   return arr.map(searchMinors);
-  // }, [data]);
-
-  // console.log("fuzzy minors", fuzzyMinors);
 
   const filterLists = useMemo(
     () => accessorFns.filterLists(getEveryValue(data)),
@@ -418,8 +403,6 @@ export default function App({ data: originalData, footnote, children }) {
   );
 
   const filterableFields = Object.keys(filterLists);
-
-  // isValueActive, areAllValuesActive, valuesPerKey, updateDropdowns
 
   const renderDropdownFilter = (k) => (
     <Dropdown

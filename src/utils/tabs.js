@@ -1,5 +1,8 @@
 import { csv } from "d3-fetch";
 
+import programCollegeLookup from "./programCollegeLookup";
+import minorCollegeLookup from "./minorCollegeLookup";
+
 const fetchJson = (url) => fetch(url).then((res) => res.json());
 
 const autoSizeGrid = (e) => {
@@ -43,6 +46,9 @@ const concDataAccessor = (result) => {
   return data.concentrations.map(({ base_id: bId, conc_id: cId, ...rest }) => ({
     ...data.base[bId],
     ...rest,
+    program_college: programCollegeLookup[data.base[bId].program]
+      ? programCollegeLookup[data.base[bId].program]
+      : "",
     concentration: data.descriptions[cId],
   }));
 };
@@ -54,18 +60,26 @@ const minorDataAccessor = (result) => {
     dataOrder.map((name, i) => [name, result[i]]),
   );
 
-  return data.minors.map(({ minor_id: mId, base_id: bId, ...rest }) => ({
+  const data2 = data.minors.map(({ minor_id: mId, base_id: bId, ...rest }) => ({
     ...data.base[bId],
     ...rest,
+    minor_college: minorCollegeLookup[data.descriptions[mId]]
+      ? minorCollegeLookup[data.descriptions[mId]]
+      : "",
     minor: data.descriptions[mId],
   }));
+
+  // console.log(data2);
+
+  return data2;
 };
 
 const globalHeaderRules = {
+  department: "Student Department",
   college: "Student College",
   priority_no: "Program No",
   ft_pt: "FT / PT",
-  GRS: "GRS",
+  GRS: "GRSe",
 };
 
 const minorHeaderRules = { ...globalHeaderRules, priority: "Minor Priority" };
@@ -77,10 +91,13 @@ const concHeaderRules = {
 
 const globalValueRules = {};
 
-const getAllButMinor = (arr) => arr.filter((s) => s !== "minor");
+const minorPinned = ["minor", "minor_college"];
 
-const getAllButConc = (arr) =>
-  arr.filter((s) => s !== "program" && s !== "concentration");
+const getAllButMinor = (arr) => arr.filter((s) => !minorPinned.includes(s));
+
+const concPinned = ["program", "concentration", "program_college"];
+
+const getAllButConc = (arr) => arr.filter((s) => !concPinned.includes(s));
 
 const defaultValueFormatter = ({ value }) => value?.toLocaleString();
 
@@ -271,22 +288,33 @@ const minorTab = {
       const pivotRows = pivotConfig.rows;
 
       const getHeaderName = (f) =>
-        f.includes(rArrow) ? { headerName: f.split(rArrow)[0] } : {};
+        f.includes(rArrow)
+          ? { headerName: f.split(rArrow)[0] }
+          : f === "minor_college"
+            ? { headerName: "Minor College" }
+            : {};
+
+      const colDefs = getMinorColDefs(columnDefs).map((o) => ({
+        ...o,
+        ...getHeaderName(o.field),
+        type: pivotRows.includes(o.field) ? null : "numericColumn",
+      }));
+
+      const colDefs2 = [
+        ...colDefs.filter(({ type }) => type === null),
+        ...colDefs.filter(({ type }) => type === "numericColumn").slice(-3),
+      ];
 
       return {
         ...params,
         ...autoSizeProps,
-        columnDefs: getMinorColDefs(columnDefs).map((o) => ({
-          ...o,
-          ...getHeaderName(o.field),
-          type: pivotRows.includes(o.field) ? null : "numericColumn",
-        })),
         defaultColDef: { suppressMovable: true, lockVisible: true },
+        columnDefs: colDefs2,
       };
     },
     pivotConfig: (obj) => ({
       ...obj,
-      rows: ["minor", ...getAllButMinor(obj.rows)],
+      rows: [...minorPinned, ...getAllButMinor(obj.rows)],
     }),
     lists: {
       pivotColumn: () => [],
@@ -298,7 +326,7 @@ const minorTab = {
   },
   initialStates: {
     pivotConfig: {
-      rows: ["minor"],
+      rows: minorPinned,
       column: "term",
       value: "total",
       agg: "sum",
@@ -314,23 +342,37 @@ const concTab = {
     gridProps: ({ columnDefs, ...params }, { pivotConfig }) => {
       const pivotRows = pivotConfig.rows;
 
+      // const getHeaderName = (f) =>
+      //   f.includes(rArrow) ? { headerName: f.split(rArrow)[0] } : {};
+
       const getHeaderName = (f) =>
-        f.includes(rArrow) ? { headerName: f.split(rArrow)[0] } : {};
+        f.includes(rArrow)
+          ? { headerName: f.split(rArrow)[0] }
+          : f === "program_college"
+            ? { headerName: "Program College" }
+            : {};
+
+      const colDefs = getConcColDefs(columnDefs).map((o) => ({
+        ...o,
+        ...getHeaderName(o.field),
+        type: pivotRows.includes(o.field) ? null : "numericColumn",
+      }));
+
+      const colDefs2 = [
+        ...colDefs.filter(({ type }) => type === null),
+        ...colDefs.filter(({ type }) => type === "numericColumn").slice(-3),
+      ];
 
       return {
         ...params,
         ...autoSizeProps,
-        columnDefs: getConcColDefs(columnDefs).map((o) => ({
-          ...o,
-          ...getHeaderName(o.field),
-          type: pivotRows.includes(o.field) ? null : "numericColumn",
-        })),
         defaultColDef: { suppressMovable: true, lockVisible: true },
+        columnDefs: colDefs2,
       };
     },
     pivotConfig: (obj) => ({
       ...obj,
-      rows: ["program", "concentration", ...getAllButConc(obj.rows)],
+      rows: [...concPinned, ...getAllButConc(obj.rows)],
     }),
     lists: {
       pivotColumn: () => [],
@@ -342,7 +384,7 @@ const concTab = {
   },
   initialStates: {
     pivotConfig: {
-      rows: ["program", "concentration"],
+      rows: concPinned,
       column: "term",
       value: "total",
       agg: "sum",
