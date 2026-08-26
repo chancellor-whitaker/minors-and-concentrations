@@ -6,7 +6,7 @@ import { createRoot } from "react-dom/client";
 import { StrictMode } from "react";
 
 import { RemoteComponent } from "./components/RemoteComponent.jsx";
-import App from "./App3.jsx";
+import App from "./App.jsx";
 
 const modules = [AllCommunityModule];
 
