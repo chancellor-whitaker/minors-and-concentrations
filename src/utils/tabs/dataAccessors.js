@@ -11,7 +11,7 @@ export const concentrationDataAccessor = (result) => {
   const data = normalizeData(result);
 
   return data.concentrations.map(
-    ({ base_id: baseId, conc_id: concentrationId, ...rest }) => ({
+    ({ conc_id: concentrationId, base_id: baseId, ...rest }) => ({
       ...data.base[baseId],
       ...rest,
       program_college: programCollegeLookup[data.base[baseId].program] || "",
@@ -25,12 +25,10 @@ export const minorDataAccessor = (result) => {
 
   const data = normalizeData(result);
 
-  return data.minors.map(
-    ({ minor_id: minorId, base_id: baseId, ...rest }) => ({
-      ...data.base[baseId],
-      ...rest,
-      minor_college: minorCollegeLookup[data.descriptions[minorId]] || "",
-      minor: data.descriptions[minorId],
-    }),
-  );
+  return data.minors.map(({ minor_id: minorId, base_id: baseId, ...rest }) => ({
+    ...data.base[baseId],
+    ...rest,
+    minor_college: minorCollegeLookup[data.descriptions[minorId]] || "",
+    minor: data.descriptions[minorId],
+  }));
 };

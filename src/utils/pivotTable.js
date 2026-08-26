@@ -1,3 +1,35 @@
+const toArray = (value) => (Array.isArray(value) ? value : [value]);
+
+const compactUnique = (values) => [
+  ...new Set(values.filter((value) => value != null && value !== "")),
+];
+
+// Normalize agg so its outer index always corresponds to the same index in value.
+// Examples:
+//   value: ["a", "b"], agg: "sum"                  => [["sum"], ["sum"]]
+//   value: ["a", "b"], agg: ["sum", "avg"]       => [["sum"], ["avg"]]
+//   value: ["a", "b"], agg: [["sum", "avg"], ["max"]]
+//                                                    => [["sum", "avg"], ["max"]]
+//   value: "a", agg: ["sum", "avg"]               => [["sum", "avg"]]
+export const normalizeAggConfig = (value, agg = "count") => {
+  const values = toArray(value);
+
+  if (!Array.isArray(agg)) {
+    return values.map(() => compactUnique([agg]));
+  }
+
+  if (values.length === 1) {
+    const singleValueAggs =
+      agg.length === 1 && Array.isArray(agg[0]) ? agg[0] : agg;
+
+    return [compactUnique(singleValueAggs)];
+  }
+
+  return values.map((_, index) =>
+    compactUnique(Array.isArray(agg[index]) ? agg[index] : [agg[index]]),
+  );
+};
+
 export default function pivotTable(
   data,
   { agg = "count", derived = {}, column, value, rows },
@@ -5,14 +37,17 @@ export default function pivotTable(
   const pivot = {};
   const columnsSet = new Set();
 
-  const values = Array.isArray(value) ? value : [value];
-
-  const aggs = Array.isArray(agg) ? agg : [agg];
+  const values = toArray(value);
+  const aggsByValue = normalizeAggConfig(value, agg);
+  const valueAggPairs = values.flatMap((valueField, valueIndex) =>
+    aggsByValue[valueIndex].map((aggFunc) => [valueField, aggFunc]),
+  );
 
   const rowKeyFn = (item) => rows.map((r) => item[r]).join("||");
 
   function createStats() {
     return {
+      numericCount: 0,
       max: -Infinity,
       min: Infinity,
       count: 0,
@@ -26,7 +61,7 @@ export default function pivotTable(
         return stats.sum;
 
       case "avg":
-        return stats.count ? stats.sum / stats.count : 0;
+        return stats.numericCount ? stats.sum / stats.numericCount : 0;
 
       case "min":
         return stats.min === Infinity ? 0 : stats.min;
@@ -39,10 +74,6 @@ export default function pivotTable(
         return stats.count;
     }
   }
-
-  // =========================
-  // BUILD AGGREGATION CUBE
-  // =========================
 
   for (const item of data) {
     const rKey = rowKeyFn(item);
@@ -70,25 +101,22 @@ export default function pivotTable(
     const cell = pivot[rKey][cKey];
 
     for (const v of values) {
-      const val = Number(item[v]);
       const stats = cell[v];
+      const rawValue = item[v];
+      const val = rawValue === "" || rawValue == null ? NaN : Number(rawValue);
+
+      stats.count += 1;
 
       if (!isNaN(val)) {
         stats.sum += val;
-        stats.count += 1;
+        stats.numericCount += 1;
         stats.min = Math.min(stats.min, val);
         stats.max = Math.max(stats.max, val);
-      } else {
-        stats.count += 1;
       }
     }
   }
 
   const columns = Array.from(columnsSet);
-
-  // =========================
-  // BUILD FINAL OUTPUT
-  // =========================
 
   return Object.values(pivot).map((entry) => {
     const obj = { ...entry._keys };
@@ -96,12 +124,9 @@ export default function pivotTable(
     for (const c of columns) {
       const cell = entry[c];
 
-      // no data for this pivot column
       if (!cell) {
-        for (const v of values) {
-          for (const a of aggs) {
-            obj[`${c}→${v}→${a}`] = 0;
-          }
+        for (const [valueField, aggFunc] of valueAggPairs) {
+          obj[`${c}→${valueField}→${aggFunc}`] = 0;
         }
 
         for (const derivedKey of Object.keys(derived)) {
@@ -111,27 +136,17 @@ export default function pivotTable(
         continue;
       }
 
-      // =========================
-      // STANDARD AGGS
-      // =========================
-
       const finalized = {};
 
-      for (const v of values) {
-        finalized[v] = {};
+      for (const [valueField, aggFunc] of valueAggPairs) {
+        if (!finalized[valueField]) finalized[valueField] = {};
 
-        for (const a of aggs) {
-          const result = finalizeAgg(cell[v], a);
+        const result = finalizeAgg(cell[valueField], aggFunc);
 
-          finalized[v][a] = result;
+        finalized[valueField][aggFunc] = result;
 
-          obj[`${c}→${v}→${a}`] = result;
-        }
+        obj[`${c}→${valueField}→${aggFunc}`] = result;
       }
-
-      // =========================
-      // DERIVED METRICS
-      // =========================
 
       for (const [derivedKey, fn] of Object.entries(derived)) {
         obj[`${c}→${derivedKey}`] = fn(finalized);

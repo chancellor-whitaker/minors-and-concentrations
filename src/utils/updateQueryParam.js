@@ -7,6 +7,5 @@ export default (key, value) => {
     url.searchParams.delete(key);
   }
 
-  // Update URL without reload
   window.history.pushState({}, "", url);
 };

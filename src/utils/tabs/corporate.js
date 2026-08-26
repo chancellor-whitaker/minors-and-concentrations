@@ -1,62 +1,50 @@
-import {
-  concentrationDataKeyFormatter,
-  dataValueFormatter,
-} from "./formatters";
-import { getFilterLists, emptyList, pinRows } from "./helpers";
-import { concentrationDataAccessor } from "./dataAccessors";
-import { createDetailGridProps } from "./grid";
+import { dataValueFormatter, dataKeyFormatter } from "./formatters";
+import { pickFilterLists, returnSelf, emptyList } from "./helpers";
+import { getRetentionGridProps } from "./grid";
+import { corporatePromise } from "./data";
 
-// Need to create a CEP dashboard to show enrollment by term with filters for Cohort Description, Program, Grad/UG - that's enough for now.
+// * try making font size smaller in headers in header groups
+// * allow for changing valueFields
+// switch old filters for wrapper filters
 
-const filterFields = ["COHORT_DESCRIPTION", "PROGRAM"];
-
-const pinnedRows = ["program", "concentration", "program_college"];
-
-const gridProps = createDetailGridProps({
-  fieldDefs: {
-    concentration: {
-      suppressSizeToFit: true,
-      sortIndex: 1,
-      sort: "asc",
-    },
-    program: {
-      suppressSizeToFit: true,
-      sortIndex: 0,
-      sort: "asc",
-    },
-  },
-  headerNames: {
-    program_college: "Program College",
-  },
-});
+const filterFields = ["COHORT_DESCRIPTION", "PROGRAM", "MINOR"];
+const pinnedRows = ["COHORT_DESCRIPTION", "PROGRAM", "MINOR"];
+const valueFields = [
+  "EKUID",
+  "CREDIT_HRS",
+  "STANDARD_CHARGE",
+  "ACTUAL_CHARGE",
+  "DISCOUNTED_AMT",
+  "DISCOUNT_RATE",
+  "ENR_YR_PRIOR_TO_CHRT",
+];
 
 const corporateTab = {
   accessorFns: {
     lists: {
+      pivotValue: () => valueFields,
       pivotColumn: emptyList,
-      pivotRows: emptyList,
-      aggType: emptyList,
+      pivotRows: returnSelf,
+      aggType: returnSelf,
     },
-    pivotConfig: (obj) => ({
-      ...obj,
-      rows: pinRows(pinnedRows, obj.rows),
-    }),
-    filterLists: (obj) => getFilterLists(obj, "college", "department"),
-    data: concentrationDataAccessor,
-    gridProps,
+    filterLists: (obj) => pickFilterLists(obj, filterFields),
+    gridProps: getRetentionGridProps,
+    data: (value) => value || [],
+    pivotConfig: returnSelf,
   },
   initialStates: {
     pivotConfig: {
-      value: "ENR_YR_PRIOR_TO_CHRT",
+      agg: [["count"], ["sum", "avg"]],
+      value: ["EKUID", "CREDIT_HRS"],
       column: "TERM_CODE",
       rows: pinnedRows,
-      agg: "sum",
     },
   },
   formatters: {
-    dataKey: concentrationDataKeyFormatter,
     dataValue: dataValueFormatter,
+    dataKey: dataKeyFormatter,
   },
+  dataPromise: corporatePromise,
   label: "Corporate Partners",
   id: "corporate",
 };

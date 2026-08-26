@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react";
 
 export default function usePromise(promise) {
-  const [state, setState] = useState(null);
+  const [result, setResult] = useState({ promise: null, value: null });
 
   useEffect(() => {
-    if (promise) {
-      let ignore = false;
+    if (!promise) return;
 
-      promise.then((response) => !ignore && setState(response));
+    let ignore = false;
 
-      return () => {
-        ignore = true;
-      };
-    }
+    promise.then((value) => {
+      if (!ignore) setResult({ promise, value });
+    });
+
+    return () => {
+      ignore = true;
+    };
   }, [promise]);
 
-  return state;
+  return result.promise === promise ? result.value : null;
 }

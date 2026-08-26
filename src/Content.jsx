@@ -1,19 +1,15 @@
 import { useState, useMemo, useRef } from "react";
 import { themeBalham } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-// import { search } from "fast-fuzzy";
 
 import MainContainer from "./components/MainContainer";
 import usePrevious from "./hooks/usePrevious";
 import Dropdown from "./components/Dropdown";
-import pivotTable from "./utils/pivotTable";
-// import minors from "./utils/minors";
+import usePromise from "./hooks/usePromise";
+import pivotTable, { normalizeAggConfig } from "./utils/pivotTable";
 import tabs from "./utils/tabs";
 
 const { SubContainer } = MainContainer;
-
-// filter lists
-// formatters: { dataKey: fn, dataValue: fn }
 
 const getEveryValue = (data) => {
   const store = {};
@@ -51,58 +47,6 @@ const getEveryValue = (data) => {
 
 // ?will eventually want degrees (could be split into 2 dashboards)
 
-// const useDropdownFilters = ({ data }) => {
-//   const [state, setState] = useState();
-
-//   const lists = useMemo(() => getEveryValue(data), [data]);
-
-//   usePrevious(lists, () => setState(lists));
-
-//   const filteredData = useMemo(
-//     () =>
-//       data.filter((row) => {
-//         for (const [k, v] of Object.entries(row)) {
-//           if (state && k in state && !state[k].has(v)) {
-//             return false;
-//           }
-//         }
-
-//         return true;
-//       }),
-//     [data, state],
-//   );
-
-//   const handleClick = (a) =>
-//     setState((obj) =>
-//       Object.fromEntries(
-//         Object.entries(obj).map((entry) =>
-//           entry[0] !== a[0]
-//             ? entry
-//             : [
-//                 a[0],
-//                 a.length === 1
-//                   ? entry[1].size === lists[a[0]].size
-//                     ? new Set()
-//                     : new Set(lists[a[0]])
-//                   : entry[1].has(a[1])
-//                     ? new Set([...entry[1]].filter((s) => s !== a[1]))
-//                     : new Set([...entry[1], a[1]]),
-//               ],
-//         ),
-//       ),
-//     );
-
-//   const isEntireListActive = (k) =>
-//     state && k in state && state[k].size === lists[k].size;
-
-//   const isActive = (a) =>
-//     a.length === 1
-//       ? isEntireListActive(a[0])
-//       : state && a[0] in state && state[a[0]].has(a[1]);
-
-//   return { filteredData, handleClick, isActive, state, lists };
-// };
-
 // *how to add % calculation?
 // *add search to dropdowns
 // ?would it be possible to have tabs be a js file appended to the window?
@@ -124,17 +68,19 @@ const getEveryValue = (data) => {
 // ?file organization
 // ?utilize better filter state version
 
-export default function App({ data: originalData, footnote, children }) {
+export default function App({ footnote, children }) {
   const [filters, setFilters] = useState();
 
   const [searchStrings, setSearchStrings] = useState();
 
   const [tabId, setTabId] = useState(tabs[0].id);
 
-  const { initialStates, accessorFns, formatters } = useMemo(
+  const { initialStates, dataPromise, accessorFns, formatters } = useMemo(
     () => tabs.find((obj) => obj.id === tabId),
     [tabId],
   );
+
+  const originalData = usePromise(dataPromise);
 
   const [pivotConfigState, setPivotConfig] = useState(
     initialStates.pivotConfig,
@@ -146,7 +92,12 @@ export default function App({ data: originalData, footnote, children }) {
 
   usePrevious(initialStates, initPivotState);
 
-  const { column: pivotColumn, rows: pivotRows, agg: aggType } = pivotConfig;
+  const {
+    column: pivotColumn,
+    value: pivotValue,
+    rows: pivotRows,
+    agg: aggType,
+  } = pivotConfig;
 
   const data = useMemo(
     () => accessorFns.data(originalData),
@@ -271,17 +222,80 @@ export default function App({ data: originalData, footnote, children }) {
       column: obj.column === key ? null : key,
     }));
 
-  const updateAggType = (key) =>
-    setPivotConfig((obj) => ({
-      ...obj,
-      agg: obj.agg === key ? null : key,
-    }));
+  const pivotValues = Array.isArray(pivotValue)
+    ? pivotValue
+    : pivotValue == null
+      ? []
+      : [pivotValue];
+
+  const initialPivotValues = Array.isArray(initialStates.pivotConfig.value)
+    ? initialStates.pivotConfig.value
+    : initialStates.pivotConfig.value == null
+      ? []
+      : [initialStates.pivotConfig.value];
+
+  const initialAggTypes = normalizeAggConfig(
+    initialStates.pivotConfig.value,
+    initialStates.pivotConfig.agg,
+  );
+
+  const getDefaultAggTypes = (valueField) => {
+    const initialIndex = initialPivotValues.indexOf(valueField);
+
+    return initialIndex >= 0 && initialAggTypes[initialIndex]?.length
+      ? [...initialAggTypes[initialIndex]]
+      : ["sum"];
+  };
+
+  const updatePivotValue = (key) =>
+    setPivotConfig((obj) => {
+      const currentValues = Array.isArray(obj.value)
+        ? obj.value
+        : obj.value == null
+          ? []
+          : [obj.value];
+      const currentAggs = normalizeAggConfig(obj.value, obj.agg);
+      const valueIndex = currentValues.indexOf(key);
+
+      if (valueIndex >= 0) {
+        return {
+          ...obj,
+          value: currentValues.filter((_, index) => index !== valueIndex),
+          agg: currentAggs.filter((_, index) => index !== valueIndex),
+        };
+      }
+
+      return {
+        ...obj,
+        value: [...currentValues, key],
+        agg: [...currentAggs, getDefaultAggTypes(key)],
+      };
+    });
+
+  const updateAggType = (valueIndex, key) =>
+    setPivotConfig((obj) => {
+      const currentAggs = normalizeAggConfig(obj.value, obj.agg);
+      const nextAggs = currentAggs.map((aggTypes, index) => {
+        if (index !== valueIndex) return aggTypes;
+
+        return aggTypes.includes(key)
+          ? aggTypes.filter((aggType) => aggType !== key)
+          : [...aggTypes, key];
+      });
+
+      return {
+        ...obj,
+        agg: Array.isArray(obj.value) ? nextAggs : nextAggs[0],
+      };
+    });
 
   const keys = [...new Set(data.flatMap(Object.keys))];
 
   const pivotRowsList = accessorFns.lists.pivotRows(keys);
 
   const pivotColumnList = accessorFns.lists.pivotColumn(keys);
+
+  const pivotValueList = accessorFns.lists.pivotValue(keys);
 
   const aggTypeList = accessorFns.lists.aggType([
     "sum",
@@ -350,28 +364,32 @@ export default function App({ data: originalData, footnote, children }) {
     </Dropdown>
   );
 
-  const aggTypeDropdown = aggTypeList.length > 0 && (
+  const pivotValueDropdown = pivotValueList.length > 0 && (
     <Dropdown
       renderButton={(api) => (
         <Dropdown.Button
-          disabled={!aggTypeList.length > 0}
-          toggle={aggTypeList.length > 0}
+          disabled={!pivotValueList.length > 0}
+          toggle={pivotValueList.length > 0}
           {...api}
         >
-          Agg type: {aggType}
+          Value fields: {
+            pivotValues.length
+              ? pivotValues.map(formatters.dataKey).join(", ")
+              : "None"
+          }
         </Dropdown.Button>
       )}
     >
       {(api) =>
-        aggTypeList.length > 0 && (
+        pivotValueList.length > 0 && (
           <Dropdown.Menu {...api}>
-            {aggTypeList.map((key) => (
+            {pivotValueList.map((key) => (
               <Dropdown.Item
-                onClick={() => updateAggType(key)}
-                active={aggType === key}
+                onClick={() => updatePivotValue(key)}
+                active={pivotValues.includes(key)}
                 key={key}
               >
-                {key}
+                {formatters.dataKey(key)}
               </Dropdown.Item>
             ))}
           </Dropdown.Menu>
@@ -379,6 +397,48 @@ export default function App({ data: originalData, footnote, children }) {
       }
     </Dropdown>
   );
+
+  const currentAggTypes = normalizeAggConfig(pivotValue, aggType);
+
+  const aggTypeDropdowns =
+    aggTypeList.length > 0
+      ? pivotValues.map((valueField, valueIndex) => {
+          const activeAggs = currentAggTypes[valueIndex];
+
+          return (
+            <Dropdown
+              renderButton={(api) => (
+                <Dropdown.Button
+                  disabled={!aggTypeList.length > 0}
+                  toggle={aggTypeList.length > 0}
+                  {...api}
+                >
+                  Agg type ({formatters.dataKey(valueField)}): {
+                    activeAggs.length ? activeAggs.join(", ") : "None"
+                  }
+                </Dropdown.Button>
+              )}
+              key={valueField}
+            >
+              {(api) =>
+                aggTypeList.length > 0 && (
+                  <Dropdown.Menu {...api}>
+                    {aggTypeList.map((key) => (
+                      <Dropdown.Item
+                        onClick={() => updateAggType(valueIndex, key)}
+                        active={activeAggs.includes(key)}
+                        key={key}
+                      >
+                        {key}
+                      </Dropdown.Item>
+                    ))}
+                  </Dropdown.Menu>
+                )
+              }
+            </Dropdown>
+          );
+        })
+      : [];
 
   const tabSwitcher = (
     <div>
@@ -461,7 +521,8 @@ export default function App({ data: originalData, footnote, children }) {
   const menuItems = [
     pivotRowsDropdown,
     pivotColumnDropdown,
-    aggTypeDropdown,
+    pivotValueDropdown,
+    ...aggTypeDropdowns,
   ].filter(Boolean);
 
   const gridRef = useRef();

@@ -1,11 +1,4 @@
 const arr = [
-  // {
-  //   "Fall 2023": "2,059",
-  //   "Fall 2024": "2,273",
-  //   "Fall 2025": "2,318",
-  //   College: "",
-  //   Minor: "",
-  // },
   {
     College: "Letters, Arts, & Social Sciences",
     Minor: "Psychology",
@@ -907,11 +900,5 @@ const arr = [
 const lookup = Object.fromEntries(
   arr.map(({ College, Minor }) => [Minor, College]),
 );
-
-// console.log(Object.entries(lookup).filter(([, v]) => !v));
-
-// console.log(Object.keys(lookup));
-
-// console.log(lookup);
 
 export default lookup;

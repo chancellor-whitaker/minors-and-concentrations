@@ -1,7 +1,8 @@
+import { minorDataKeyFormatter, dataValueFormatter } from "./formatters";
+import { getFilterLists, emptyList, pinRows } from "./helpers";
 import { minorDataAccessor } from "./dataAccessors";
-import { dataValueFormatter, minorDataKeyFormatter } from "./formatters";
 import { createDetailGridProps } from "./grid";
-import { emptyList, getFilterLists, pinRows } from "./helpers";
+import { jsonDataPromise } from "./data";
 
 const pinnedRows = ["minor", "minor_college"];
 
@@ -28,18 +29,19 @@ const filterLists = (obj) => {
 
 const minorTab = {
   accessorFns: {
-    gridProps,
-    filterLists,
+    lists: {
+      pivotColumn: emptyList,
+      pivotValue: emptyList,
+      pivotRows: emptyList,
+      aggType: emptyList,
+    },
     pivotConfig: (obj) => ({
       ...obj,
       rows: pinRows(pinnedRows, obj.rows),
     }),
-    lists: {
-      pivotColumn: emptyList,
-      pivotRows: emptyList,
-      aggType: emptyList,
-    },
     data: minorDataAccessor,
+    filterLists,
+    gridProps,
   },
   initialStates: {
     pivotConfig: {
@@ -50,9 +52,10 @@ const minorTab = {
     },
   },
   formatters: {
-    dataValue: dataValueFormatter,
     dataKey: minorDataKeyFormatter,
+    dataValue: dataValueFormatter,
   },
+  dataPromise: jsonDataPromise,
   label: "Minors",
   id: "minors",
 };

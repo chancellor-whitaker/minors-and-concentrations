@@ -11,7 +11,4 @@ export const dataPromise2 = csv("data/202650_12MAY2026_ProgramEnrollments.csv");
 
 export const corporatePromise = fetchJson("data/corporate.json");
 
-console.log(corporatePromise);
-
-// Keep the current application behavior: the JSON datasets are the active source.
-export const dataPromise = jsonDataPromise;
+export const dataPromise = corporatePromise;

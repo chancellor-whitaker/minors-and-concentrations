@@ -17,6 +17,11 @@ export const pinRows = (pinnedRows, rows) => [
   ...rows.filter((row) => !pinnedRows.includes(row)),
 ];
 
+export const pickFilterLists = (obj, fields) =>
+  Object.fromEntries(
+    fields.filter((field) => field in obj).map((field) => [field, obj[field]]),
+  );
+
 export const getFilterLists = (obj, ...additionalExcludedKeys) =>
   Object.fromEntries(
     Object.entries(obj)

@@ -26,8 +26,8 @@ export default defineConfig(
 
 */
 
-import { buildConfig } from "./buildConfig";
-import { d3CDNPlugin } from "./d3CDNPlugin";
+import { buildConfig } from "./buildConfig.js";
+import { d3CDNPlugin } from "./d3CDNPlugin.js";
 
 export const patch = (configB = {}) => {
   const configA = { plugins: [d3CDNPlugin], ...buildConfig };

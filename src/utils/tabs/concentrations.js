@@ -5,6 +5,7 @@ import {
 import { getFilterLists, emptyList, pinRows } from "./helpers";
 import { concentrationDataAccessor } from "./dataAccessors";
 import { createDetailGridProps } from "./grid";
+import { jsonDataPromise } from "./data";
 
 const pinnedRows = ["program", "concentration", "program_college"];
 
@@ -30,6 +31,7 @@ const concentrationTab = {
   accessorFns: {
     lists: {
       pivotColumn: emptyList,
+      pivotValue: emptyList,
       pivotRows: emptyList,
       aggType: emptyList,
     },
@@ -53,6 +55,7 @@ const concentrationTab = {
     dataKey: concentrationDataKeyFormatter,
     dataValue: dataValueFormatter,
   },
+  dataPromise: jsonDataPromise,
   label: "Concentrations",
   id: "concentrations",
 };

@@ -1,13 +1,4 @@
 const arr = [
-  // {
-  //   "Fall 2023": "7,515",
-  //   "Fall 2024": "7,829",
-  //   "Fall 2025": "7,719",
-  //   Concentration: "",
-  //   Program: "",
-  //   College: "",
-  //   "": "",
-  // },
   {
     Concentration: "AGS Conc. - Psychology",
     Program: "AA in General Studies",
@@ -4408,5 +4399,3 @@ const lookup = Object.fromEntries(
 );
 
 export default lookup;
-
-// export default Object.fromEntries(arr)

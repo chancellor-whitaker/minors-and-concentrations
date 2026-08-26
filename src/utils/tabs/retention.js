@@ -1,6 +1,7 @@
 import { getFilterLists, returnSelf, emptyList } from "./helpers";
 import { dataKeyFormatter } from "./formatters";
 import { getRetentionGridProps } from "./grid";
+import { dataPromise2 } from "./data";
 
 const retentionTab = {
   initialStates: {
@@ -21,6 +22,7 @@ const retentionTab = {
   accessorFns: {
     lists: {
       pivotColumn: emptyList,
+      pivotValue: emptyList,
       pivotRows: returnSelf,
       aggType: emptyList,
     },
@@ -33,6 +35,7 @@ const retentionTab = {
     dataValue: ([, value]) => value,
     dataKey: dataKeyFormatter,
   },
+  dataPromise: dataPromise2,
   label: "Retention",
   id: "retention",
 };

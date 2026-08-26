@@ -1,8 +1,4 @@
-import {
-  defaultValueFormatter,
-  formatPercentage,
-  snakeToTitle,
-} from "./formatters";
+import { defaultValueFormatter, formatPercentage } from "./formatters";
 
 export const ARROW = "→";
 
@@ -30,35 +26,42 @@ const rowSortProps = (rows, def) =>
       }
     : {};
 
+// Pivot fields are emitted as:
+//   columnValue→valueField→aggType
+// and derived fields as:
+//   columnValue→derivedField
+//
+// AG Grid renders columnValue as the group header and only the remaining path
+// as the child header. This restores the original grouped-header behavior while
+// keeping valueField → aggType literal when multiple measures are present.
 export const parseArrowColumns = (columnDefs) => {
   const groups = [];
-
-  const findGroup = (field) =>
-    groups.find(({ headerName }) => headerName === field.split(ARROW)[0]);
-
-  const addGroup = (field) =>
-    groups.push({ headerName: field.split(ARROW)[0], children: [] });
-
-  const findChild = (field, group) =>
-    group.children.find(({ field: childField }) => childField === field.split(ARROW)[1]);
-
-  const addChild = (field, group) =>
-    group.children.push({
-      valueFormatter: field.includes("%")
-        ? formatPercentage
-        : defaultValueFormatter,
-      headerName: snakeToTitle(field.split(ARROW)[1]),
-      type: "numericColumn",
-      field,
-    });
+  const groupsByHeader = new Map();
 
   columnDefs
     .filter(({ field }) => field.includes(ARROW))
-    .forEach(({ field }) => {
-      if (!findGroup(field)) addGroup(field);
+    .forEach((def) => {
+      const [columnValue, ...childPath] = def.field.split(ARROW);
 
-      const group = findGroup(field);
-      if (!findChild(field, group)) addChild(field, group);
+      if (!groupsByHeader.has(columnValue)) {
+        const group = {
+          headerName: columnValue,
+          children: [],
+        };
+
+        groupsByHeader.set(columnValue, group);
+        groups.push(group);
+      }
+
+      groupsByHeader.get(columnValue).children.push({
+        ...def,
+        valueFormatter: def.field.includes("%")
+          ? formatPercentage
+          : defaultValueFormatter,
+        headerName: childPath.map((s, i) => (i === 0 ? s : `(${s})`)).join(" "),
+        headerClass: ["child-header", "ag-right-aligned-header"],
+        type: "numericColumn",
+      });
     });
 
   return groups;
@@ -68,27 +71,23 @@ export const getRetentionGridProps = (
   { columnDefs, ...params },
   { pivotConfig: { rows } },
 ) => {
-  const normalizedColumnDefs = [
-    ...columnDefs.filter(({ field }) => !field.includes(ARROW)),
-    ...parseArrowColumns(columnDefs),
-  ];
-
-  return {
-    columnDefs: normalizedColumnDefs.map((def) => ({
+  const rowColumnDefs = columnDefs
+    .filter(({ field }) => !field.includes(ARROW))
+    .map((def) => ({
       ...def,
       ...rowSortProps(rows, def),
-    })),
+    }));
+
+  return {
+    columnDefs: [...rowColumnDefs, ...parseArrowColumns(columnDefs)],
     defaultColDef,
     ...params,
     ...autoSizeProps,
   };
 };
 
-export const createDetailGridProps = ({
-  fieldDefs,
-  headerNames = {},
-  numericColumnLimit = 3,
-}) =>
+export const createDetailGridProps =
+  ({ numericColumnLimit = 3, headerNames = {}, fieldDefs }) =>
   ({ columnDefs, ...params }, { pivotConfig }) => {
     const pivotRows = pivotConfig.rows;
 
@@ -107,12 +106,14 @@ export const createDetailGridProps = ({
     return {
       ...params,
       ...autoSizeProps,
-      defaultColDef,
       columnDefs: [
         ...formattedColumnDefs.filter(({ type }) => type === null),
-        ...formattedColumnDefs
-          .filter(({ type }) => type === "numericColumn")
-          .slice(-numericColumnLimit),
+        ...(numericColumnLimit == null
+          ? formattedColumnDefs.filter(({ type }) => type === "numericColumn")
+          : formattedColumnDefs
+              .filter(({ type }) => type === "numericColumn")
+              .slice(-numericColumnLimit)),
       ],
+      defaultColDef,
     };
   };

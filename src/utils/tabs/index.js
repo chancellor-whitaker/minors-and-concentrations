@@ -1,10 +1,5 @@
-import { dataPromise, jsonDataPromise } from "./data";
-import concentrationTab from "./concentrations";
-import minorTab from "./minors";
-import retentionTab from "./retention";
+import corporateTab from "./corporate";
 
-const tabs = dataPromise === jsonDataPromise
-  ? [minorTab, concentrationTab]
-  : [retentionTab];
+const tabs = [corporateTab];
 
 export default tabs;

@@ -23,3 +23,7 @@ button.btn:not(.btn-ghost) {
 .ag-header-group-cell-label {
   justify-content: center;
 }
+
+.ag-header-cell.child-header .ag-header-cell-text {
+  font-size: 0.85em;
+}
