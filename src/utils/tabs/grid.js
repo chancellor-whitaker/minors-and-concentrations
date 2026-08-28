@@ -8,6 +8,7 @@ const autoSizeGrid = (event) => {
 
 export const autoSizeProps = {
   autoSizeStrategy: { type: "fitCellContents" },
+  suppressColumnVirtualisation: true,
   onGridSizeChanged: autoSizeGrid,
   onRowDataUpdated: autoSizeGrid,
 };

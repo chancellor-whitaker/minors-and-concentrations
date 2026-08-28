@@ -6,6 +6,8 @@ import { corporatePromise } from "./data";
 // * try making font size smaller in headers in header groups
 // * allow for changing valueFields
 // switch old filters for wrapper filters
+// export csv file with arrows or by duplicating top header values
+// add csv download to wrapper?
 
 const filterFields = ["COHORT_DESCRIPTION", "PROGRAM", "MINOR"];
 const pinnedRows = ["COHORT_DESCRIPTION", "PROGRAM", "MINOR"];
@@ -16,7 +18,6 @@ const valueFields = [
   "ACTUAL_CHARGE",
   "DISCOUNTED_AMT",
   "DISCOUNT_RATE",
-  "ENR_YR_PRIOR_TO_CHRT",
 ];
 
 const corporateTab = {

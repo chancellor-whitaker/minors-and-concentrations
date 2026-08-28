@@ -5,20 +5,18 @@ import "./index.css";
 import { createRoot } from "react-dom/client";
 import { StrictMode } from "react";
 
-import { RemoteComponent } from "./components/RemoteComponent.jsx";
 import App from "./App.jsx";
 
 const modules = [AllCommunityModule];
+import { RemoteComponentProvider, getWrapperRemoteUrl } from "./remote";
 
+const wrapperUrl = getWrapperRemoteUrl();
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <RemoteComponent
-      url="https://irserver2.eku.edu/libraries/remote/r19-wrapper.cjs"
-      heading="Minors & Concentrations Enrollment"
-    >
+    <RemoteComponentProvider url={wrapperUrl}>
       <AgGridProvider modules={modules}>
         <App />
       </AgGridProvider>
-    </RemoteComponent>
+    </RemoteComponentProvider>
   </StrictMode>,
 );

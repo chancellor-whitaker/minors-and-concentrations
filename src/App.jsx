@@ -1,7 +1,5 @@
-import MainContainer from "./components/MainContainer";
-import Dropdown from "./components/Dropdown";
+import { useRemoteComponent } from "./remote";
 import Content from "./Content";
-const { SubContainer } = MainContainer;
 
 // *2 dropdowns for file list
 // *set grs to official grs (ft bach seeking) by default
@@ -12,11 +10,13 @@ const { SubContainer } = MainContainer;
 // ! query param stuff
 
 export default function App() {
+  const Wrapper = useRemoteComponent();
+
   return (
-    <>
+    <Wrapper heading="Corporate Partnerships">
       <Content
         footnote={<i>* This is based on official enrollment numbers.</i>}
       ></Content>
-    </>
+    </Wrapper>
   );
 }
