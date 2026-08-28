@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { themeBalham } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 
@@ -8,6 +8,7 @@ import Dropdown from "./components/Dropdown";
 import usePromise from "./hooks/usePromise";
 import pivotTable, { normalizeAggConfig } from "./utils/pivotTable";
 import tabs from "./utils/tabs";
+import { useRemoteComponent } from "./remote";
 
 const { SubContainer } = MainContainer;
 
@@ -51,8 +52,8 @@ const getEveryValue = (data) => {
 // *add search to dropdowns
 // ?would it be possible to have tabs be a js file appended to the window?
 // ?responsive auto-sizing (based on dynamic width)
-// !filter state should be like faculty workload filter state
-// !should be able to set initial filters
+// *filter state uses the shared Wrapper dropdown-filter API
+// *initial filters are preserved when filter lists reset
 // *footnote that this is based on official enrollment numbers
 
 // retention
@@ -66,12 +67,11 @@ const getEveryValue = (data) => {
 // ?performance
 // *styling
 // ?file organization
-// ?utilize better filter state version
+// *utilize shared Wrapper filter state
 
 export default function App({ footnote, children }) {
-  const [filters, setFilters] = useState();
-
-  const [searchStrings, setSearchStrings] = useState();
+  const Wrapper = useRemoteComponent();
+  const { DropdownFilter, useDropdownFilters } = Wrapper.api.dropdownFilters;
 
   const [tabId, setTabId] = useState(tabs[0].id);
 
@@ -123,66 +123,60 @@ export default function App({ footnote, children }) {
     );
   }, [filterLists, initialStates]);
 
-  const initFilters = () => {
-    setFilters(initialFilters);
-
-    setSearchStrings(
-      Object.fromEntries(Object.entries(filterLists).map(([k]) => [k, ""])),
-    );
-  };
-
-  usePrevious(filterLists, initFilters);
-
-  const onSearchChange = ({ target }) =>
-    setSearchStrings((state) =>
+  const availableValuesByField = useMemo(
+    () =>
       Object.fromEntries(
-        Object.entries(state).map((entry) =>
-          entry[0] === target.name ? [target.name, target.value] : entry,
-        ),
+        Object.entries(filterLists).map(([field, values]) => [
+          field,
+          [...values],
+        ]),
       ),
-    );
+    [filterLists],
+  );
+
+  const dropdownFilters = useDropdownFilters({ availableValuesByField });
+
+  /*
+   * The old local filter implementation reset selections whenever a tab/data
+   * change produced a new filter list. Preserve that behavior while letting
+   * the Wrapper own filter selection/history state.
+   */
+  useEffect(() => {
+    for (const [field, checkedValues] of Object.entries(initialFilters)) {
+      dropdownFilters.uncheckEverything(field);
+      dropdownFilters.setValuesChecked({
+        values: [...checkedValues],
+        checked: true,
+        field,
+      });
+    }
+  }, [
+    initialFilters,
+    dropdownFilters.setValuesChecked,
+    dropdownFilters.uncheckEverything,
+  ]);
 
   const filteredData = useMemo(
     () =>
       data.filter((row) => {
-        for (const [k, v] of Object.entries(row)) {
-          if (filters && k in filters && !filters[k].has(v)) {
+        for (const [field, value] of Object.entries(row)) {
+          if (
+            field in availableValuesByField &&
+            !dropdownFilters.isValueChecked({ field, value })
+          ) {
             return false;
           }
         }
 
         return true;
       }),
-    [data, filters],
+    [
+      data,
+      availableValuesByField,
+      dropdownFilters.filtersState,
+      dropdownFilters.isValueChecked,
+    ],
   );
-
-  const updateFilters = (a) =>
-    setFilters((state) =>
-      Object.fromEntries(
-        Object.entries(state).map((entry) =>
-          entry[0] !== a[0]
-            ? entry
-            : [
-                a[0],
-                a.length === 1
-                  ? entry[1].size === filterLists[a[0]].size
-                    ? new Set()
-                    : new Set(filterLists[a[0]])
-                  : entry[1].has(a[1])
-                    ? new Set([...entry[1]].filter((s) => s !== a[1]))
-                    : new Set([...entry[1], a[1]]),
-              ],
-        ),
-      ),
-    );
-
-  const areAllValuesActive = (k) =>
-    filters && k in filters && filters[k].size === filterLists[k].size;
-
-  const isValueActive = (a) =>
-    a.length === 1
-      ? areAllValuesActive(a[0])
-      : filters && a[0] in filters && filters[a[0]].has(a[1]);
 
   const [pivotEnabled] = useState(true);
 
@@ -464,58 +458,16 @@ export default function App({ footnote, children }) {
 
   const filterableFields = Object.keys(filterLists);
 
-  const renderDropdownFilter = (k) => (
-    <Dropdown
-      renderButton={(api) => (
-        <Dropdown.Button
-          variant={isValueActive([k]) ? "secondary" : "warning"}
-          className="w-100"
-          {...api}
-        >
-          {formatters.dataKey(k)}
-        </Dropdown.Button>
-      )}
-      className="flex-fill"
-      key={k}
-    >
-      {(api) => (
-        <Dropdown.Menu className="pt-0" {...api}>
-          <form className="p-2 mb-2 bg-body-tertiary border-bottom">
-            <input
-              placeholder="Type to filter..."
-              onChange={onSearchChange}
-              value={searchStrings[k]}
-              className="form-control"
-              autoComplete="false"
-              type="search"
-              name={k}
-            />
-          </form>
-
-          <Dropdown.Item
-            onClick={() => updateFilters([k])}
-            active={isValueActive([k])}
-          >
-            All
-          </Dropdown.Item>
-          {(filterLists && k in filterLists ? [...filterLists[k]] : [])
-            .filter((v) =>
-              `${v}`
-                .toLowerCase()
-                .includes(`${searchStrings[k]}`.toLowerCase()),
-            )
-            .map((v) => (
-              <Dropdown.Item
-                onClick={() => updateFilters([k, v])}
-                active={isValueActive([k, v])}
-                key={v}
-              >
-                {formatters.dataValue([k, v])}
-              </Dropdown.Item>
-            ))}
-        </Dropdown.Menu>
-      )}
-    </Dropdown>
+  const renderDropdownFilter = (field) => (
+    <DropdownFilter
+      availableValues={availableValuesByField[field] ?? []}
+      formatValue={(value) => formatters.dataValue([field, value])}
+      filters={dropdownFilters}
+      label={formatters.dataKey(field)}
+      className="d-grid flex-fill"
+      field={field}
+      key={`${tabId}:${field}`}
+    />
   );
 
   const menuItems = [

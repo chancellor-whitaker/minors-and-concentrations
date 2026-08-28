@@ -13,7 +13,7 @@ export default function App() {
   const Wrapper = useRemoteComponent();
 
   return (
-    <Wrapper heading="Corporate Partnerships">
+    <Wrapper>
       <Content
         footnote={<i>* This is based on official enrollment numbers.</i>}
       ></Content>
